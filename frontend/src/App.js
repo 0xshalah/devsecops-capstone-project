@@ -10,6 +10,12 @@ import ApiKeys from "@/console/pages/ApiKeys";
 import Playground from "@/console/pages/Playground";
 import SecurityLogs from "@/console/pages/SecurityLogs";
 import Settings from "@/console/pages/Settings";
+import { AuthProvider } from "@/auth/AuthContext";
+import { RequireAuth } from "@/auth/guards";
+import AuthLayout from "@/auth/AuthLayout";
+import SignIn from "@/auth/pages/SignIn";
+import SignUp from "@/auth/pages/SignUp";
+import ForgotPassword from "@/auth/pages/ForgotPassword";
 
 const PAGES = [
   { path: "/docs", title: "Documentation", body: "API reference and quickstart guides are being written. [DOCS URL]" },
@@ -19,13 +25,21 @@ const PAGES = [
 
 function App() {
   return (
+    <AuthProvider>
     <BrowserRouter>
       <SmoothScroll />
       <Toaster theme="dark" position="bottom-right" toastOptions={{ style: { background: "#111114", border: "1px solid #232327", color: "#f4f4f5", borderRadius: 6 } }} />
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/health" element={<Health />} />
-        <Route path="/console" element={<ConsoleLayout />}>
+        <Route path="/auth" element={<AuthLayout />}>
+          <Route index element={<Navigate to="sign-in" replace />} />
+          <Route path="sign-in" element={<SignIn />} />
+          <Route path="sign-up" element={<SignUp />} />
+          <Route path="forgot-password" element={<ForgotPassword />} />
+          <Route path="*" element={<Navigate to="sign-in" replace />} />
+        </Route>
+        <Route path="/console" element={<RequireAuth><ConsoleLayout /></RequireAuth>}>
           <Route index element={<Navigate to="overview" replace />} />
           <Route path="overview" element={<Overview />} />
           <Route path="keys" element={<ApiKeys />} />
@@ -40,6 +54,7 @@ function App() {
         <Route path="*" element={<Placeholder title="Not found" body="This page does not exist." />} />
       </Routes>
     </BrowserRouter>
+    </AuthProvider>
   );
 }
 

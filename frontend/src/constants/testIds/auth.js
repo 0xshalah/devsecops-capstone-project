@@ -17,6 +17,8 @@ export const LOGIN = {
 	submitButton: 'login-submit-button',
 	forgotPasswordLink: 'login-forgot-password-link',
 	registerLink: 'login-register-link',
+	googleButton: 'login-google-button',
+	passwordToggle: 'login-password-toggle',
 };
 
 export const REGISTER = {
@@ -26,8 +28,22 @@ export const REGISTER = {
 	passwordConfirmInput: 'register-password-confirm-input',
 	submitButton: 'register-submit-button',
 	loginLink: 'register-login-link',
+	googleButton: 'register-google-button',
+	passwordToggle: 'register-password-toggle',
+	passwordRequirement: 'register-password-requirement',
+};
+
+export const RESET = {
+	emailInput: 'reset-email-input',
+	submitButton: 'reset-submit-button',
+	signInLink: 'reset-sign-in-link',
+	confirmation: 'reset-confirmation',
+	sentTo: 'reset-sent-to',
+	resendButton: 'reset-resend-button',
+	backToSignInButton: 'reset-back-to-sign-in-button',
 };
 
 export const LOGOUT = {
 	button: 'logout-button',
+	accountEmail: 'logout-account-email',
 };
