@@ -1,0 +1,49 @@
+# ---------- Version control ----------
+.git
+.gitignore
+.github
+
+# ---------- Dependencies (reinstalled inside image) ----------
+node_modules
+**/node_modules
+.venv
+venv
+__pycache__
+**/__pycache__
+
+# ---------- Build artifacts ----------
+dist
+build
+.next
+out
+coverage
+
+# ---------- Secrets & env ----------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# ---------- Local data ----------
+*.db
+*.sqlite
+*.sqlite3
+data
+
+# ---------- Docs & non-runtime files ----------
+docs
+*.md
+!README.md
+
+# ---------- Editor / OS ----------
+.vscode
+.idea
+.DS_Store
+*.log
+
+# ---------- CI / k8s (not needed in image) ----------
+jenkins
+k8s
+monitoring
