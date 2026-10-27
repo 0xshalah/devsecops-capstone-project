@@ -1,0 +1,59 @@
+# ---------- Environment & secrets ----------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+secrets/
+kubeconfig
+*.kubeconfig
+
+# ---------- Dependencies ----------
+node_modules/
+.pnpm-store/
+vendor/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---------- Build output ----------
+dist/
+build/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+
+# ---------- Database ----------
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+data/
+
+# ---------- Logs & reports ----------
+*.log
+npm-debug.log*
+yarn-error.log*
+trivy-*.json
+trivy-*.sarif
+sonar-report/
+.scannerwork/
+
+# ---------- Editor / OS ----------
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# ---------- Misc ----------
+tmp/
+.cache/
