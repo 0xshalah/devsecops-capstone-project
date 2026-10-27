@@ -36,6 +36,9 @@ a:focus-visible, button:focus-visible {
   outline-offset: 3px;
 }
 
+.tnum { font-variant-numeric: tabular-nums; }
+.console-scroll { scrollbar-width: thin; scrollbar-color: #27272a transparent; }
+
 .line-mask { display: block; overflow: hidden; padding-bottom: 0.08em; }
 
 @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }

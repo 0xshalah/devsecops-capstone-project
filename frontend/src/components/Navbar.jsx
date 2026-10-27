@@ -40,7 +40,10 @@ export const Navbar = () => {
           {NAV.map((n) => <NavItem key={n.label} item={n} />)}
         </nav>
         <div className="flex items-center gap-3">
-          <Link to={LINKS.console} data-testid="get-api-key-button" className="rounded-[5px] bg-[var(--accent)] px-3.5 py-2 text-sm font-semibold text-[#0b0b0d] transition-colors duration-200 hover:bg-[var(--accent-ink)]">
+          <Link to={LINKS.console} data-testid="nav-console-link" className="hidden text-sm text-zinc-400 transition-colors duration-200 hover:text-zinc-100 sm:inline">
+            Console
+          </Link>
+          <Link to={LINKS.consoleKeys} data-testid="get-api-key-button" className="rounded-[5px] bg-[var(--accent)] px-3.5 py-2 text-sm font-semibold text-[#0b0b0d] transition-colors duration-200 hover:bg-[var(--accent-ink)]">
             Get API Key
           </Link>
           <button data-testid="mobile-menu-toggle" aria-label="Toggle menu" aria-expanded={open} onClick={() => setOpen((v) => !v)} className="flex h-9 w-9 flex-col items-center justify-center gap-1.5 rounded-[5px] border border-[var(--line)] md:hidden">

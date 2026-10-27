@@ -11,16 +11,17 @@ export const scrollToId = (id) => {
 
 export const SmoothScroll = () => {
   const { pathname } = useLocation();
+  const inConsole = pathname.startsWith("/console");
 
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return undefined;
+    if (inConsole || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return undefined;
     const lenis = new Lenis({ duration: 1.15, smoothWheel: true });
     window.__lenis = lenis;
     let raf;
     const loop = (t) => { lenis.raf(t); raf = requestAnimationFrame(loop); };
     raf = requestAnimationFrame(loop);
     return () => { cancelAnimationFrame(raf); lenis.destroy(); window.__lenis = null; };
-  }, []);
+  }, [inConsole]);
 
   useEffect(() => {
     if (window.__lenis) window.__lenis.scrollTo(0, { immediate: true });

@@ -1,22 +1,24 @@
-# Tollgate landing page PRD
+# Tollgate PRD
 
 ## Original problem statement
-Build ONLY the frontend landing page for a B2B SaaS Enterprise AI API Gateway (repo devsecops-capstone-project). Follow github.com/miqdadbadjuber/anti-slop: no neon gradients, blobs, sparkle/robot icons; restrained palette with one accent; no buzzwords (Unleash, Revolutionize, Supercharge, Next-Gen, Elevate, Seamless, Empower); no em/en dashes; no fake testimonials, logos or metrics. Sections: navbar (wordmark, Features, Documentation, Pricing, Get API Key), hero (technical headline, 2-line subhead, Start Building + Read the Docs, interactive terminal hitting /v1/chat/completions with JSON response), 3 capabilities (Unified Model Routing, Prompt Guardrails, Token & Cost Governance), 3-tier pricing, footer (All Systems Operational badge linked to /health, API Docs, GitHub, Security Policy). Responsive, lightweight, Docker/K8s friendly.
+Phase 1: Landing page for B2B SaaS Enterprise AI API Gateway (repo devsecops-capstone-project), anti-slop rules (github.com/miqdadbadjuber/anti-slop).
+Phase 2: Frontend Developer Console & Dashboard. Mock state + modular API service hooks (wire to FastAPI later). Collapsible sidebar (expanded / icon rail with tooltips, toggle + shortcut), global command palette (Ctrl/Cmd+K, fuzzy, arrow nav, jump-to and actions: Generate New API Key, Copy Gateway Base URL, Toggle Sidebar). Views: Overview (health strip linked to /health, env badge, 4 metrics, traffic/latency chart, recent requests), API Keys (table, create modal with one-time copy and quota, revoke/delete), Gateway Playground (split pane /v1/chat sandbox, model selector, prompts, strict injection guardrail, JSON response with status, latency, tokens, PASSED/BLOCKED), Security Logs (dense table, status badges, rule triggered). tabular-nums for numbers, no em/en dashes, English UI.
 
 ## Architecture
-- React (CRA/craco) + Tailwind, framer-motion, lenis. Fonts: Schibsted Grotesk + IBM Plex Mono (Google Fonts).
-- Content and placeholder values: src/content.js. Snippets: src/components/snippets.js.
-- Backend: only GET /api/health (pings Mongo) for the status badge and /health page.
-- Routes: /, /health, /docs, /console, /contact, /security (placeholders).
+- React (craco) + Tailwind, framer-motion, lenis (landing only), cmdk, recharts. Fonts: Schibsted Grotesk + IBM Plex Mono.
+- Console code: src/console/ (ConsoleLayout, ConsoleContext, nav.js, components/, pages/, hooks/useGateway.js, services/gatewayApi.js + mockData.js, lib/format.js)
+- services/gatewayApi.js is the single swap point for the FastAPI backend.
+- Backend: GET /api/health only (used by console health strip).
+- Routes: /console -> /console/overview, /console/keys, /console/playground, /console/logs, /console/settings.
 
-## Implemented (2026-10-27)
-- Navbar with mobile menu, masked line reveal hero, scroll parallax, tilting terminal (cURL/Node/Python tabs, Copy, Run with example response)
-- Editorial marquee, bento capabilities with routing/guardrail/meter visuals and spotlight photo, 3-tier pricing, footer with live status badge
-- Favicon/logo SVG mark
+## Implemented
+- 2026-10-27: Landing page.
+- 2026-10-27: Console & dashboard (all views above), Ctrl/Cmd+K palette, Ctrl/Cmd+B sidebar, env switch (live/test) in Settings. Landing "Get API Key" -> /console/keys, "Console" nav link and "Start Building" -> /console.
 
-## Placeholders
-- Pro price $[X], all [bracketed] limits, GitHub org URL, docs/console/sales/security pages, gateway host gateway.tollgate.example
+## MOCKED
+- Keys, metrics, traffic, logs, and /v1/chat responses come from in-memory mock client (resets on reload). Health is real.
 
 ## Backlog
-- P1: real docs content, real console link, final prices
-- P2: Dockerfile + nginx config for static build, SEO meta/OG
+- P0: FastAPI endpoints for keys, logs, metrics, /v1/chat; swap gatewayApi methods to fetch
+- P1: auth for console, persistent key storage (hashed), log export
+- P2: per-key usage drilldown, Dockerfile + nginx

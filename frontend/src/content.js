@@ -2,6 +2,7 @@
 export const LINKS = {
   docs: "/docs",
   console: "/console",
+  consoleKeys: "/console/keys",
   contact: "/contact",
   security: "/security",
   health: "/health",
