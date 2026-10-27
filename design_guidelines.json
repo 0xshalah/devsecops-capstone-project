@@ -1,0 +1,184 @@
+{
+  "project_name": "Tollgate",
+  "archetype": "THE PERFORMANCE PRO / SWISS HIGH-CONTRAST (Developer Tools)",
+  "context": "Marketing Landing Page for B2B SaaS Enterprise AI API Gateway",
+  "anti_slop_rules": {
+    "prohibited_colors": ["purple", "cyan", "magenta", "#7351B7", "neon gradients"],
+    "prohibited_elements": ["3D blobs", "AI sparkle icons", "robot icons", "em dashes", "en dashes", "fake testimonials", "fake metrics", "fake sponsor logos"],
+    "prohibited_buzzwords": ["Unleash", "Revolutionize", "Supercharge", "Next-Gen", "Elevate", "Seamless", "Empower"],
+    "typography_style": "Sharp industrial monospace and geometric sans. 1px precise borders. Cloudflare/Linear/Vercel developer aesthetic."
+  },
+  "typography": {
+    "font_family_heading": "JetBrains Mono, Geist Mono, ui-monospace, SFMono-Regular, monospace",
+    "font_family_body": "Inter, system-ui, -apple-system, sans-serif",
+    "font_family_code": "JetBrains Mono, Fira Code, monospace",
+    "h1": "text-4xl sm:text-5xl lg:text-6xl font-mono tracking-tight font-bold text-zinc-100",
+    "h2": "text-2xl sm:text-3xl lg:text-4xl font-mono tracking-tight font-semibold text-zinc-100",
+    "h3": "text-xl sm:text-2xl font-mono font-medium text-zinc-200",
+    "body": "text-sm sm:text-base font-sans leading-relaxed text-zinc-400",
+    "mono_label": "text-xs font-mono uppercase tracking-widest text-zinc-500"
+  },
+  "colors": {
+    "theme": "dark",
+    "base_background": "#09090b",
+    "surface_card": "#121215",
+    "surface_card_hover": "#18181b",
+    "border_default": "#27272a",
+    "border_highlight": "#3f3f46",
+    "accent_primary": "#FF5500",
+    "accent_primary_hover": "#FF6A1A",
+    "accent_subtle": "rgba(255, 85, 0, 0.10)",
+    "text_main": "#f4f4f5",
+    "text_muted": "#a1a1aa",
+    "text_dark_subtle": "#71717a",
+    "code_bg": "#0d0d10",
+    "code_comment": "#52525b",
+    "code_string": "#34d399",
+    "code_keyword": "#ff5500",
+    "code_number": "#fbbf24"
+  },
+  "layout_and_spacing": {
+    "spacing_scale": "Tailwind scale (p-4, p-6, p-8, p-12, py-20, py-32)",
+    "container_max_width": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+    "grid_capabilities": "grid grid-cols-1 md:grid-cols-3 gap-6",
+    "grid_pricing": "grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch"
+  },
+  "components": {
+    "navbar": {
+      "path": "src/components/Navbar.js",
+      "style": "sticky top-0 z-50 backdrop-blur-md bg-zinc-950/80 border-b border-zinc-800/80 px-6 py-4 flex items-center justify-between",
+      "elements": ["Wordmark 'Tollgate' with sharp SVG icon", "Links: Features, Documentation, Pricing", "Get API Key button (solid Industrial Orange)"]
+    },
+    "hero": {
+      "path": "src/components/Hero.js",
+      "style": "pt-20 pb-16 text-left max-w-4xl mx-auto px-4 sm:px-6",
+      "features": ["Kinetic line-by-line reveal animation on load using framer-motion", "Technical headline without buzzwords", "2-line technical subhead", "CTAs: Start Building (Primary Orange) and Read the Docs (Outline Zinc)"]
+    },
+    "interactive_terminal": {
+      "path": "src/components/InteractiveTerminal.js",
+      "style": "bg-zinc-950 border border-zinc-800 rounded-lg overflow-hidden shadow-2xl font-mono text-xs sm:text-sm my-8",
+      "features": [
+        "Language Tabs: cURL, Node.js, Python",
+        "Copy button with toast confirmation",
+        "Execute / Run simulation button showing latency metric (e.g. 18ms, 200 OK)",
+        "Formatted JSON response output",
+        "Subtle 3D tilt movement on hover using mouse cursor coordinates"
+      ]
+    },
+    "editorial_marquee": {
+      "path": "src/components/EditorialMarquee.js",
+      "style": "py-6 border-y border-zinc-800/60 bg-zinc-950/40 overflow-hidden font-mono text-xs tracking-widest text-zinc-500 uppercase",
+      "items": [
+        "OPENAI /v1/chat/completions",
+        "ANTHROPIC /v1/messages",
+        "AWS BEDROCK /v1/invoke",
+        "MISTRAL /v1/embeddings",
+        "GROQ /v1/chat/completions",
+        "AZURE AI /v1/rerank"
+      ]
+    },
+    "capabilities": {
+      "path": "src/components/Capabilities.js",
+      "cards": [
+        {
+          "title": "Unified Model Routing",
+          "description": "Route requests dynamically across OpenAI, Anthropic, Bedrock, and self-hosted models using a single OpenAI-compatible endpoint with automatic latency failover."
+        },
+        {
+          "title": "Prompt Guardrails",
+          "description": "Enforce real-time PII redacting, regex blocking, maximum latency budgets, and safety evaluation pipelines inline before payloads reach downstream providers."
+        },
+        {
+          "title": "Token & Cost Governance",
+          "description": "Set granular per-team budget limits, enforce client rate limits at the gateway layer, and stream real-time cost telemetry directly to Prometheus or Datadog."
+        }
+      ]
+    },
+    "pricing": {
+      "path": "src/components/Pricing.js",
+      "tiers": [
+        {
+          "name": "Developer Free",
+          "price": "$0 / month",
+          "rps": "10 RPS limit",
+          "retention": "24h log retention",
+          "guardrails": "Standard guardrail filters",
+          "cta": "Start Free"
+        },
+        {
+          "name": "Pro",
+          "price": "$149 / month",
+          "rps": "100 RPS limit",
+          "retention": "30-day log retention",
+          "guardrails": "Custom regex & PII guardrails",
+          "cta": "Deploy Pro"
+        },
+        {
+          "name": "Enterprise",
+          "price": "Custom",
+          "rps": "Dedicated RPS & custom routes",
+          "retention": "1-year audit log retention",
+          "guardrails": "Air-gapped VPC & custom SLA",
+          "cta": "Contact Sales"
+        }
+      ]
+    },
+    "footer": {
+      "path": "src/components/Footer.js",
+      "style": "border-t border-zinc-800 bg-zinc-950 py-12 px-6",
+      "elements": [
+        "All Systems Operational status badge linked to /health with green indicator dot",
+        "API Docs link",
+        "GitHub repository link",
+        "Security Policy link",
+        "Tollgate brand mark & copyright notice"
+      ]
+    }
+  },
+  "motion_and_effects": {
+    "library": "framer-motion",
+    "smooth_scroll": "Lenis smooth scroll integration",
+    "scroll_reveal": "staggered fade-up on viewport scroll using framer-motion initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}",
+    "terminal_tilt": "3D perspective tilt effect on mouse movement using framer-motion useMotionValue and useTransform"
+  },
+  "required_data_testids": [
+    "nav-wordmark",
+    "nav-features-link",
+    "nav-docs-link",
+    "nav-pricing-link",
+    "get-api-key-button",
+    "hero-headline",
+    "hero-subhead",
+    "hero-start-building-button",
+    "hero-read-docs-button",
+    "interactive-terminal",
+    "terminal-tab-curl",
+    "terminal-tab-node",
+    "terminal-tab-python",
+    "terminal-run-button",
+    "terminal-copy-button",
+    "terminal-json-response",
+    "editorial-marquee",
+    "capability-card-unified-routing",
+    "capability-card-prompt-guardrails",
+    "capability-card-token-governance",
+    "pricing-card-developer-free",
+    "pricing-card-pro",
+    "pricing-card-enterprise",
+    "pricing-select-button-developer-free",
+    "pricing-select-button-pro",
+    "pricing-select-button-enterprise",
+    "system-status-badge",
+    "footer-api-docs-link",
+    "footer-github-link",
+    "footer-security-policy-link"
+  ],
+  "instructions_to_main_agent": [
+    "Build ONLY a React JS landing page for Tollgate in /app/frontend.",
+    "Follow dark zinc monochrome + industrial orange accent theme precisely.",
+    "Ensure absolutely zero forbidden buzzwords or em/en dashes in copy.",
+    "Implement Lenis smooth scroll and framer-motion line-by-line reveal.",
+    "Ensure interactive terminal has tab switching (cURL, Node.js, Python), run simulation with status 200 OK & latency, copy code to clipboard, and 3D tilt effect on hover.",
+    "Include every data-testid specified in required_data_testids."
+  ]
+}

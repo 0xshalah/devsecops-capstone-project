@@ -1,0 +1,60 @@
+@import url("https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap");
+@import "lenis/dist/lenis.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #09090b;
+  --surface: #111114;
+  --line: #232327;
+  --line-strong: #3a3a40;
+  --ink: #f4f4f5;
+  --muted: #a1a1aa;
+  --accent: #ff5500;
+  --accent-ink: #ff7a3d;
+  --font-sans: "Schibsted Grotesk", ui-sans-serif, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+html { background: var(--bg); }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+::selection { background: var(--accent); color: #0b0b0d; }
+code, pre, .font-mono { font-family: var(--font-mono); }
+.font-display { font-family: var(--font-sans); }
+
+a:focus-visible, button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.line-mask { display: block; overflow: hidden; padding-bottom: 0.08em; }
+
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.marquee-track { animation: marquee 60s linear infinite; }
+.marquee-wrap:hover .marquee-track { animation-play-state: paused; }
+
+@keyframes blink { 50% { opacity: 0; } }
+.caret { animation: blink 1s step-end infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track, .caret { animation: none; }
+}
+
+@layer base {
+  :root {
+    --background: 240 10% 4%;
+    --foreground: 240 5% 96%;
+    --border: 240 5% 15%;
+    --radius: 0.375rem;
+  }
+  [data-debug-wrapper="true"] { display: contents !important; }
+}
