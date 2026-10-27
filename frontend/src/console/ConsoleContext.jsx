@@ -12,6 +12,7 @@ export const ConsoleProvider = ({ children }) => {
   const [env, setEnv] = useState(() => localStorage.getItem(ENV_KEY) || "live");
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [keysVersion, setKeysVersion] = useState(0);
   const [strictDefault, setStrictDefault] = useState(true);
 
@@ -23,8 +24,8 @@ export const ConsoleProvider = ({ children }) => {
 
   const value = useMemo(() => ({
     collapsed, toggleSidebar, env, setEnv, paletteOpen, setPaletteOpen,
-    createOpen, setCreateOpen, keysVersion, bumpKeys, strictDefault, setStrictDefault,
-  }), [collapsed, toggleSidebar, env, paletteOpen, createOpen, keysVersion, bumpKeys, strictDefault]);
+    createOpen, setCreateOpen, profileOpen, setProfileOpen, keysVersion, bumpKeys, strictDefault, setStrictDefault,
+  }), [collapsed, toggleSidebar, env, paletteOpen, createOpen, profileOpen, keysVersion, bumpKeys, strictDefault]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 };

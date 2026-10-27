@@ -1,9 +1,5 @@
-import { Link, NavLink, useNavigate } from "react-router-dom";
-import { PanelLeftClose, PanelLeftOpen, LogOut } from "lucide-react";
-import { toast } from "sonner";
-import { useAuth } from "@/auth/AuthContext";
-import { SIGN_IN } from "@/auth/guards";
-import { LOGOUT } from "@/constants/testIds";
+import { Link, NavLink } from "react-router-dom";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { LogoMark } from "@/components/Logo";
 import { useConsole } from "../ConsoleContext";
@@ -46,32 +42,6 @@ const NavItem = ({ item, collapsed }) => {
   );
 };
 
-const Account = ({ collapsed }) => {
-  const { session, signOut } = useAuth();
-  const navigate = useNavigate();
-  const out = () => { signOut(); navigate(SIGN_IN, { replace: true }); toast("Signed out"); };
-  return (
-    <>
-      <div className={`overflow-hidden px-3 pb-1.5 pt-1 transition-opacity duration-150 ${collapsed ? "h-0 p-0 opacity-0" : "opacity-100"}`}>
-        <p className="truncate text-[13px] font-medium capitalize text-zinc-200">{session?.name}</p>
-        <p data-testid={LOGOUT.accountEmail} className="truncate font-mono text-[11px] text-zinc-500">{session?.email}</p>
-      </div>
-      <WithTip collapsed={collapsed} label="Sign out">
-        <button
-          type="button"
-          onClick={out}
-          data-testid={LOGOUT.button}
-          aria-label="Sign out"
-          className="flex h-9 w-full items-center gap-3 overflow-hidden rounded-[5px] pl-3 pr-2 text-[13px] text-zinc-400 transition-colors duration-150 hover:bg-zinc-900/60 hover:text-zinc-200"
-        >
-          <LogOut className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-          <Label collapsed={collapsed}>Sign out</Label>
-        </button>
-      </WithTip>
-    </>
-  );
-};
-
 export const Sidebar = () => {
   const { collapsed, toggleSidebar } = useConsole();
   const ToggleIcon = collapsed ? PanelLeftOpen : PanelLeftClose;
@@ -91,7 +61,6 @@ export const Sidebar = () => {
         {NAV.map((item) => <NavItem key={item.id} item={item} collapsed={collapsed} />)}
       </nav>
       <div className="space-y-0.5 border-t border-[var(--line)] p-2">
-        <Account collapsed={collapsed} />
         <WithTip collapsed={collapsed} label={`Expand sidebar (${MOD} B)`}>
           <button
             type="button"

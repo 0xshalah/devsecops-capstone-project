@@ -6,6 +6,8 @@ Phase 2: Frontend Developer Console & Dashboard. Mock state + modular API servic
 
 Phase 3: Authentication flow (Sign In, Sign Up, Forgot Password) with mock session, landing CTAs gated, Sign Out in console.
 
+Phase 4: Account menu and profile management. Header account dropdown (session info, plan badge, Profile Settings, Console Settings, Sign Out), Profile Settings modal (edit display name and email, read only user ID and organization ID, inline save feedback), state synced via AuthContext.
+
 ## Architecture
 - React (craco) + Tailwind, framer-motion, lenis (landing only), cmdk, recharts. Fonts: Schibsted Grotesk + IBM Plex Mono.
 - Console code: src/console/ (ConsoleLayout, ConsoleContext, nav.js, components/, pages/, hooks/useGateway.js, services/gatewayApi.js + mockData.js, lib/format.js)
@@ -19,8 +21,10 @@ Phase 3: Authentication flow (Sign In, Sign Up, Forgot Password) with mock sessi
 
 - 2026-10-27: Auth flow. Routes /auth/sign-in, /auth/sign-up, /auth/forgot-password (src/auth/). RequireAuth guards /console and preserves target (Get API Key -> /console/keys after sign in). GuestOnly redirects signed-in users to /console. Sign out in sidebar footer. Tested 100% (iteration_1).
 
+- 2026-10-27: Account menu (src/console/components/AccountMenu.jsx, Radix dropdown with click outside close) and Profile Settings dialog (ProfileDialog.jsx). AuthContext.updateProfile persists to localStorage and updates header instantly. Sidebar account block removed, sign out lives in the header menu.
+
 ## MOCKED
-- Auth is client-side only: session in localStorage `tollgate.session`, accounts (name only) in `tollgate.accounts`, passwords not checked, Google sign-in simulated, reset email not sent.
+- Auth is client-side only: session in localStorage `tollgate.session`, accounts (name only) in `tollgate.accounts`, passwords not checked, Google sign-in simulated, profile updates and user/org IDs are local only (IDs derived from email hash), reset email not sent.
 - Keys, metrics, traffic, logs, and /v1/chat responses come from in-memory mock client (resets on reload). Health is real.
 
 ## Backlog

@@ -6,6 +6,7 @@ import { Sidebar } from "./components/Sidebar";
 import { Header } from "./components/Header";
 import { CommandPalette } from "./components/CommandPalette";
 import { CreateKeyDialog } from "./components/CreateKeyDialog";
+import { ProfileDialog } from "./components/ProfileDialog";
 
 const useShortcuts = () => {
   const { toggleSidebar, setPaletteOpen } = useConsole();
@@ -34,6 +35,7 @@ const Shell = () => {
       </div>
       <CommandPalette />
       <CreateKeyDialog />
+      <ProfileDialog />
     </div>
   );
 };

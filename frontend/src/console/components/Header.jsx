@@ -4,6 +4,7 @@ import { useConsole } from "../ConsoleContext";
 import { NAV } from "../nav";
 import { MOD } from "../lib/format";
 import { EnvBadge, Kbd } from "./ui";
+import { AccountMenu } from "./AccountMenu";
 
 export const Header = () => {
   const { pathname } = useLocation();
@@ -30,6 +31,8 @@ export const Header = () => {
         sample data
       </span>
       <EnvBadge env={env} testId="header-env-badge" />
+      <span aria-hidden className="h-5 w-px bg-[var(--line)]" />
+      <AccountMenu />
     </header>
   );
 };
