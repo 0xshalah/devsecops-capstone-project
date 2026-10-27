@@ -5,6 +5,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/auth/AuthContext";
+import { usePrefs } from "@/preferences/PreferencesContext";
 import { SIGN_IN } from "@/auth/guards";
 import { ACCOUNT } from "@/constants/testIds";
 import { useConsole } from "../ConsoleContext";
@@ -29,7 +30,8 @@ export const AccountMenu = () => {
   const { session, signOut } = useAuth();
   const { setProfileOpen } = useConsole();
   const navigate = useNavigate();
-  const out = () => { signOut(); navigate(SIGN_IN, { replace: true }); toast("Signed out"); };
+  const { t } = usePrefs();
+  const out = () => { signOut(); navigate(SIGN_IN, { replace: true }); toast(t("console.account.signedOut")); };
 
   return (
     <DropdownMenu modal={false}>
@@ -58,14 +60,14 @@ export const AccountMenu = () => {
         </div>
         <DropdownMenuSeparator className="-mx-1 my-1 bg-[var(--line)]" />
         <DropdownMenuItem data-testid={ACCOUNT.profileItem} onSelect={() => setProfileOpen(true)} className={itemCls}>
-          <UserRound className="h-4 w-4 text-zinc-500" strokeWidth={1.75} /> Profile Settings
+          <UserRound className="h-4 w-4 text-zinc-500" strokeWidth={1.75} /> {t("console.account.profile")}
         </DropdownMenuItem>
         <DropdownMenuItem data-testid={ACCOUNT.settingsItem} onSelect={() => navigate("/console/settings")} className={itemCls}>
-          <Settings className="h-4 w-4 text-zinc-500" strokeWidth={1.75} /> Console Settings
+          <Settings className="h-4 w-4 text-zinc-500" strokeWidth={1.75} /> {t("console.account.settings")}
         </DropdownMenuItem>
         <DropdownMenuSeparator className="-mx-1 my-1 bg-[var(--line)]" />
         <DropdownMenuItem data-testid={ACCOUNT.signOutItem} onSelect={out} className={`${itemCls} text-rose-400 focus:bg-rose-500/10 focus:text-rose-300`}>
-          <LogOut className="h-4 w-4" strokeWidth={1.75} /> Sign Out
+          <LogOut className="h-4 w-4" strokeWidth={1.75} /> {t("console.account.signOut")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -1,0 +1,138 @@
+export const LANGS = [
+  { value: "id", short: "ID", name: "Bahasa Indonesia" },
+  { value: "en", short: "EN", name: "English" },
+];
+
+const en = {
+  lang: { label: "Language" },
+  nav: { features: "Features", docs: "Documentation", pricing: "Pricing", console: "Console", getKey: "Get API Key", menu: "Toggle menu" },
+  hero: {
+    lines: ["One endpoint for", "every LLM provider.", "Guardrails built in."],
+    sub: "An OpenAI compatible gateway that routes to the fastest healthy provider and filters prompts before they leave your network.",
+    start: "Start Building",
+    docs: "Read the Docs",
+  },
+  cap: {
+    label: "Capabilities",
+    title: "Three controls between your code and every model.",
+    photo: "Runs inside your network",
+    routing: { index: "Routing", title: "Unified Model Routing", body: "Route requests across OpenAI, Anthropic, and local models through one endpoint. Failed or slow providers fail over automatically." },
+    guard: { index: "Guardrails", title: "Prompt Guardrails", body: "Block prompt injection and redact sensitive payloads before a request leaves your network." },
+    gov: { index: "Governance", title: "Token & Cost Governance", body: "Track token usage per API key and enforce rate limits in real time." },
+  },
+  pricing: {
+    label: "Pricing",
+    title: "Pay for throughput, not seats.",
+    body: "Every plan uses the same gateway. Limits and retention are what change.",
+    featured: "Most teams",
+    tiers: {
+      "developer-free": { name: "Developer", unit: "per month", note: "For prototypes and side projects.", items: ["[10] requests per second", "[24 hours] log retention", "Default guardrail set", "Community support"], cta: "Create free key" },
+      pro: { name: "Pro", unit: "per month", note: "For teams shipping to production.", items: ["[100] requests per second", "[30 days] log retention", "Custom guardrail rules", "Per-key budgets and alerts"], cta: "Choose Pro" },
+      enterprise: { name: "Enterprise", price: "Custom", unit: "annual contract", note: "For regulated workloads.", items: ["Dedicated throughput", "[1 year] audit log retention", "Custom guardrails with policy review", "Private networking options"], cta: "Talk to sales" },
+    },
+  },
+  footer: { tagline: ["Route.", "Inspect.", "Meter."], docs: "API Docs", security: "Security Policy" },
+  console: {
+    nav: { overview: "Overview", keys: "API Keys", playground: "Gateway Playground", logs: "Security Logs", settings: "Settings" },
+    search: "Search or run a command",
+    sample: "sample data",
+    collapse: "Collapse",
+    expand: "Expand sidebar",
+    collapseSidebar: "Collapse sidebar",
+    account: { profile: "Profile Settings", settings: "Console Settings", signOut: "Sign Out", signedOut: "Signed out" },
+    overview: {
+      desc: "Gateway telemetry for the last 24 hours.",
+      health: "Gateway health", env: "Environment", baseUrl: "Base URL", lastCheck: "Last health check",
+      total: "Total requests (24h)", tokens: "Token volume", latency: "Avg gateway latency", blocks: "Guardrail blocks",
+      traffic: "Traffic, last 24h (UTC)", rules: "Blocks by rule (sample)", recent: "Recent requests", viewLogs: "View logs",
+    },
+    keys: { desc: "Secret keys for the {env} environment. Full tokens are shown once at creation.", create: "Create secret key" },
+    logs: { desc: "Guardrail decisions per request. Timestamps in UTC.", refresh: "Refresh" },
+  },
+  settings: {
+    desc: "Console preferences for this browser.",
+    appearance: { title: "Appearance", theme: "Theme", hint: "Applies to the console in this browser. The landing page stays dark.", dark: "Dark", light: "Light" },
+    localization: { title: "Localization", language: "Interface language", hint: "Used on the landing page and in the console." },
+    security: {
+      title: "Account Security",
+      reset: "Reset password", resetHint: "Signs you out and opens the password reset form.", resetAction: "Reset password",
+      keys: "API keys", keysHint: "Create, review, and revoke secret keys for this account.", keysAction: "Manage API keys",
+    },
+    gateway: {
+      title: "Gateway",
+      env: "Environment", envHint: "API keys are listed and created for the selected environment.",
+      baseUrl: "Base URL", baseUrlHint: "Use this as the OpenAI compatible base URL in your client.", copied: "Gateway base URL copied",
+      strict: "Strict guardrail by default", strictHint: "Playground starts with the prompt injection guardrail enforced.",
+      collapsed: "Collapsed sidebar", collapsedHint: "Saved in this browser.",
+    },
+    shortcuts: { title: "Keyboard shortcuts", palette: "Open command palette", sidebar: "Collapse or expand sidebar", send: "Send playground request" },
+  },
+};
+
+const id = {
+  lang: { label: "Bahasa" },
+  nav: { features: "Fitur", docs: "Dokumentasi", pricing: "Harga", console: "Konsol", getKey: "Dapatkan API Key", menu: "Buka atau tutup menu" },
+  hero: {
+    lines: ["Satu endpoint untuk", "semua penyedia LLM.", "Guardrail bawaan."],
+    sub: "Gateway yang kompatibel dengan OpenAI. Merutekan ke penyedia tercepat yang sehat dan menyaring prompt sebelum keluar dari jaringan Anda.",
+    start: "Mulai Membangun",
+    docs: "Baca Dokumentasi",
+  },
+  cap: {
+    label: "Kemampuan",
+    title: "Tiga kontrol antara kode Anda dan setiap model.",
+    photo: "Berjalan di dalam jaringan Anda",
+    routing: { index: "Routing", title: "Routing Model Terpadu", body: "Rutekan request ke OpenAI, Anthropic, dan model lokal lewat satu endpoint. Penyedia yang gagal atau lambat dialihkan otomatis." },
+    guard: { index: "Guardrail", title: "Guardrail Prompt", body: "Blokir prompt injection dan samarkan payload sensitif sebelum request keluar dari jaringan Anda." },
+    gov: { index: "Tata Kelola", title: "Tata Kelola Token & Biaya", body: "Lacak pemakaian token per API key dan terapkan rate limit secara real time." },
+  },
+  pricing: {
+    label: "Harga",
+    title: "Bayar sesuai throughput, bukan jumlah kursi.",
+    body: "Semua paket memakai gateway yang sama. Yang berbeda hanya batas dan masa simpan log.",
+    featured: "Pilihan banyak tim",
+    tiers: {
+      "developer-free": { name: "Developer", unit: "per bulan", note: "Untuk prototipe dan proyek sampingan.", items: ["[10] request per detik", "Log disimpan [24 jam]", "Set guardrail bawaan", "Dukungan komunitas"], cta: "Buat key gratis" },
+      pro: { name: "Pro", unit: "per bulan", note: "Untuk tim yang rilis ke produksi.", items: ["[100] request per detik", "Log disimpan [30 hari]", "Aturan guardrail kustom", "Anggaran dan peringatan per key"], cta: "Pilih Pro" },
+      enterprise: { name: "Enterprise", price: "Kustom", unit: "kontrak tahunan", note: "Untuk beban kerja yang diregulasi.", items: ["Throughput khusus", "Log audit disimpan [1 tahun]", "Guardrail kustom dengan tinjauan kebijakan", "Opsi jaringan privat"], cta: "Hubungi sales" },
+    },
+  },
+  footer: { tagline: ["Rutekan.", "Periksa.", "Ukur."], docs: "Dokumentasi API", security: "Kebijakan Keamanan" },
+  console: {
+    nav: { overview: "Ringkasan", keys: "API Key", playground: "Playground Gateway", logs: "Log Keamanan", settings: "Pengaturan" },
+    search: "Cari atau jalankan perintah",
+    sample: "data contoh",
+    collapse: "Ciutkan",
+    expand: "Bentangkan sidebar",
+    collapseSidebar: "Ciutkan sidebar",
+    account: { profile: "Pengaturan Profil", settings: "Pengaturan Konsol", signOut: "Keluar", signedOut: "Anda sudah keluar" },
+    overview: {
+      desc: "Telemetri gateway untuk 24 jam terakhir.",
+      health: "Kesehatan gateway", env: "Environment", baseUrl: "Base URL", lastCheck: "Cek kesehatan terakhir",
+      total: "Total request (24 jam)", tokens: "Volume token", latency: "Rata-rata latensi gateway", blocks: "Blokir guardrail",
+      traffic: "Trafik, 24 jam terakhir (UTC)", rules: "Blokir per aturan (contoh)", recent: "Request terbaru", viewLogs: "Lihat log",
+    },
+    keys: { desc: "Secret key untuk environment {env}. Token lengkap hanya ditampilkan sekali saat dibuat.", create: "Buat secret key" },
+    logs: { desc: "Keputusan guardrail per request. Waktu dalam UTC.", refresh: "Muat ulang" },
+  },
+  settings: {
+    desc: "Preferensi konsol untuk browser ini.",
+    appearance: { title: "Tampilan", theme: "Tema", hint: "Berlaku untuk konsol di browser ini. Landing page tetap gelap.", dark: "Gelap", light: "Terang" },
+    localization: { title: "Lokalisasi", language: "Bahasa antarmuka", hint: "Dipakai di landing page dan di konsol." },
+    security: {
+      title: "Keamanan Akun",
+      reset: "Reset kata sandi", resetHint: "Mengeluarkan Anda dari sesi lalu membuka formulir reset kata sandi.", resetAction: "Reset kata sandi",
+      keys: "API key", keysHint: "Buat, tinjau, dan cabut secret key untuk akun ini.", keysAction: "Kelola API key",
+    },
+    gateway: {
+      title: "Gateway",
+      env: "Environment", envHint: "API key ditampilkan dan dibuat untuk environment yang dipilih.",
+      baseUrl: "Base URL", baseUrlHint: "Pakai ini sebagai base URL kompatibel OpenAI di client Anda.", copied: "Base URL gateway disalin",
+      strict: "Guardrail ketat secara default", strictHint: "Playground dimulai dengan guardrail prompt injection aktif.",
+      collapsed: "Sidebar diciutkan", collapsedHint: "Disimpan di browser ini.",
+    },
+    shortcuts: { title: "Pintasan keyboard", palette: "Buka command palette", sidebar: "Ciutkan atau bentangkan sidebar", send: "Kirim request playground" },
+  },
+};
+
+export const DICTIONARY = { en, id };

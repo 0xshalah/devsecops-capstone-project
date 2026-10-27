@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Command } from "cmdk";
 import { Search, Plus, Link2, PanelLeft, CornerDownLeft } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { usePrefs } from "@/preferences/PreferencesContext";
 import { useConsole } from "../ConsoleContext";
 import { NAV, GATEWAY_BASE_URL } from "../nav";
 import { MOD } from "../lib/format";
@@ -24,6 +25,7 @@ const Item = ({ icon: Icon, children, hint, testId, ...props }) => (
 export const CommandPalette = () => {
   const { paletteOpen, setPaletteOpen, toggleSidebar, setCreateOpen, collapsed } = useConsole();
   const navigate = useNavigate();
+  const { t } = usePrefs();
   const run = (fn) => { setPaletteOpen(false); fn(); };
 
   return (
@@ -42,7 +44,7 @@ export const CommandPalette = () => {
             <Command.Group heading="Jump to" className={groupCls}>
               {NAV.map((n) => (
                 <Item key={n.id} value={`Go to ${n.label}`} keywords={n.keywords} icon={n.icon} hint={n.slug} testId={`command-item-nav-${n.id}`} onSelect={() => run(() => navigate(n.to))}>
-                  {n.label}
+                  {t(`console.nav.${n.id}`)}
                 </Item>
               ))}
             </Command.Group>

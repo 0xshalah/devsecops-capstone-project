@@ -36,7 +36,7 @@ export default function ForgotPassword() {
   const { requestReset } = useAuth();
   const { state } = useLocation();
   const [sentTo, setSentTo] = useState("");
-  const { bind, submit, run, pending, setPending } = useAuthForm({ email: "" }, validate);
+  const { bind, submit, run, pending, setPending } = useAuthForm({ email: state?.email || "" }, validate);
 
   const send = async ({ email }) => { await requestReset(email); setSentTo(email.trim()); setPending(null); };
   const resend = () => run("resend", async () => { await requestReset(sentTo); setPending(null); toast.success(`Reset email sent again to ${sentTo}`); });

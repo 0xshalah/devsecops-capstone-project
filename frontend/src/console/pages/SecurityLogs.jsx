@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { RotateCw, Search } from "lucide-react";
+import { usePrefs } from "@/preferences/PreferencesContext";
 import { useLogs } from "../hooks/useGateway";
 import { fmtInt, fmtStamp } from "../lib/format";
 import { PageHeader, Panel, Segmented, Skeleton, StatusCode, Td, Th, btnSecondary, inputCls } from "../components/ui";
@@ -10,6 +11,7 @@ const ruleCls = (r) => (r.status === 403 ? "text-rose-300" : r.status === 429 ? 
 
 export default function SecurityLogs() {
   const { data, loading, reload } = useLogs();
+  const { t } = usePrefs();
   const [status, setStatus] = useState("all");
   const [query, setQuery] = useState("");
 
@@ -21,9 +23,9 @@ export default function SecurityLogs() {
   return (
     <div data-testid="security-logs-page">
       <PageHeader
-        title="Security Logs"
-        description="Guardrail decisions per request. Timestamps in UTC."
-        actions={<button type="button" onClick={reload} data-testid="logs-refresh-button" className={btnSecondary}><RotateCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />Refresh</button>}
+        title={t("console.nav.logs")}
+        description={t("console.logs.desc")}
+        actions={<button type="button" onClick={reload} data-testid="logs-refresh-button" className={btnSecondary}><RotateCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />{t("console.logs.refresh")}</button>}
       />
       <div className="space-y-3 px-4 py-6 sm:px-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

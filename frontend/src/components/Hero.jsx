@@ -2,13 +2,13 @@ import { Link } from "react-router-dom";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Terminal } from "@/components/Terminal";
 import { LINKS } from "@/content";
+import { usePrefs } from "@/preferences/PreferencesContext";
 
-const LINES = ["One endpoint for", "every LLM provider.", "Guardrails built in."];
 const ease = [0.22, 1, 0.36, 1];
 
-const MaskedHeadline = () => (
+const MaskedHeadline = ({ lines }) => (
   <h1 data-testid="hero-headline" className="font-display text-[2.15rem] font-bold leading-[0.98] tracking-[-0.035em] text-zinc-100 sm:text-6xl lg:text-[3.6rem] xl:text-[4.6rem]">
-    {LINES.map((line, i) => (
+    {lines.map((line, i) => (
       <span key={line} className="line-mask">
         <motion.span
           className={`block ${i === 2 ? "text-[var(--accent)]" : ""}`}
@@ -33,6 +33,7 @@ export const Hero = () => {
   const { scrollY } = useScroll();
   const termY = useTransform(scrollY, [0, 600], [0, -60]);
   const headY = useTransform(scrollY, [0, 600], [0, 40]);
+  const { t } = usePrefs();
 
   return (
     <section className="relative mx-auto max-w-7xl px-5 pb-20 pt-16 sm:px-8 sm:pt-24 lg:pb-28" data-testid="hero-section">
@@ -43,18 +44,18 @@ export const Hero = () => {
               <span className="text-[var(--accent)]">POST</span> /v1/chat/completions
             </p>
           </Fade>
-          <MaskedHeadline />
+          <MaskedHeadline lines={t("hero.lines")} />
           <Fade delay={0.6}>
             <p data-testid="hero-subhead" className="mt-8 max-w-md text-base leading-relaxed text-zinc-400 md:text-lg">
-              An OpenAI compatible gateway that routes to the fastest healthy provider and filters prompts before they leave your network.
+              {t("hero.sub")}
             </p>
           </Fade>
           <Fade delay={0.72} className="mt-10 flex flex-wrap items-center gap-3">
             <Link to={LINKS.console} data-testid="hero-start-building-button" className="rounded-[5px] bg-[var(--accent)] px-5 py-3 text-sm font-semibold text-[#0b0b0d] transition-[background-color,transform] duration-200 hover:bg-[var(--accent-ink)] active:scale-[0.98]">
-              Start Building
+              {t("hero.start")}
             </Link>
             <Link to={LINKS.docs} data-testid="hero-read-docs-button" className="rounded-[5px] border border-[var(--line-strong)] px-5 py-3 text-sm font-medium text-zinc-200 transition-colors duration-200 hover:border-zinc-400 hover:text-white">
-              Read the Docs
+              {t("hero.docs")}
             </Link>
           </Fade>
         </motion.div>

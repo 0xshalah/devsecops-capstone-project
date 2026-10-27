@@ -1,13 +1,14 @@
 import { Link } from "react-router-dom";
 import { Reveal, SectionHead } from "@/components/Reveal";
+import { usePrefs } from "@/preferences/PreferencesContext";
 import { TIERS } from "@/content";
 
-const Tier = ({ t, delay }) => (
+const Tier = ({ t, delay, featuredLabel }) => (
   <Reveal delay={delay} data-testid={`pricing-card-${t.id}`}
     className={`flex flex-col border-[var(--line)] p-7 sm:p-9 ${t.featured ? "bg-[var(--surface)] md:-my-4 md:border md:border-[var(--line-strong)] md:rounded-lg" : ""}`}>
     <div className="flex items-baseline justify-between">
       <h3 className="font-display text-lg font-semibold text-zinc-100">{t.name}</h3>
-      {t.featured && <span className="font-mono text-xs text-[var(--accent-ink)]">Most teams</span>}
+      {t.featured && <span className="font-mono text-xs text-[var(--accent-ink)]">{featuredLabel}</span>}
     </div>
     <p className="mt-1 text-sm text-zinc-400">{t.note}</p>
     <p className="mt-8 font-display text-5xl font-bold tracking-[-0.04em] text-zinc-100" data-testid={`pricing-price-${t.id}`}>{t.price}</p>
@@ -26,11 +27,16 @@ const Tier = ({ t, delay }) => (
   </Reveal>
 );
 
-export const Pricing = () => (
-  <section id="pricing" className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:py-32" data-testid="pricing-section">
-    <SectionHead index="02" label="Pricing" title="Pay for throughput, not seats." body="Every plan uses the same gateway. Limits and retention are what change." />
-    <div className="grid divide-y divide-[var(--line)] rounded-lg border border-[var(--line)] md:grid-cols-3 md:divide-x md:divide-y-0">
-      {TIERS.map((t, i) => <Tier key={t.id} t={t} delay={i * 0.08} />)}
-    </div>
-  </section>
-);
+export const Pricing = () => {
+  const { t } = usePrefs();
+  return (
+    <section id="pricing" className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:py-32" data-testid="pricing-section">
+      <SectionHead index="02" label={t("pricing.label")} title={t("pricing.title")} body={t("pricing.body")} />
+      <div className="grid divide-y divide-[var(--line)] rounded-lg border border-[var(--line)] md:grid-cols-3 md:divide-x md:divide-y-0">
+        {TIERS.map((tier, i) => (
+          <Tier key={tier.id} t={{ ...tier, ...t(`pricing.tiers.${tier.id}`) }} delay={i * 0.08} featuredLabel={t("pricing.featured")} />
+        ))}
+      </div>
+    </section>
+  );
+};

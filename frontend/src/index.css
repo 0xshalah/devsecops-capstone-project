@@ -52,6 +52,60 @@ a:focus-visible, button:focus-visible {
   .marquee-track, .caret { animation: none; }
 }
 
+/* Theme change: brief color crossfade, removed after 260ms so transforms keep their own timing. */
+html.theme-transition, html.theme-transition *, html.theme-transition *::before, html.theme-transition *::after {
+  transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease, fill 200ms ease !important;
+}
+
+/* Light theme. The console is authored with zinc utilities for dark, these remap them when .dark is absent. */
+html:not(.dark) {
+  --bg: #fafafa;
+  --surface: #ffffff;
+  --line: #e4e4e7;
+  --line-strong: #d4d4d8;
+  --ink: #0f172a;
+  --muted: #475569;
+  --accent-ink: #c2410c;
+  --background: 0 0% 98%;
+  --foreground: 222 47% 11%;
+  --border: 240 6% 90%;
+}
+html:not(.dark) ::selection { color: #ffffff; }
+html:not(.dark) .console-scroll { scrollbar-color: #d4d4d8 transparent; }
+
+html:not(.dark) .text-zinc-100 { color: #0f172a; }
+html:not(.dark) .text-zinc-200 { color: #1e293b; }
+html:not(.dark) .text-zinc-300 { color: #334155; }
+html:not(.dark) .text-zinc-400 { color: #475569; }
+html:not(.dark) .text-zinc-500 { color: #64748b; }
+html:not(.dark) .text-zinc-600 { color: #94a3b8; }
+html:not(.dark) .text-zinc-700 { color: #cbd5e1; }
+html:not(.dark) .text-\[\#ff7a3d\] { color: #c2410c; }
+html:not(.dark) .text-\[\#34d399\] { color: #047857; }
+html:not(.dark) .text-\[\#fbbf24\] { color: #b45309; }
+html:not(.dark) .text-emerald-400 { color: #047857; }
+html:not(.dark) .text-amber-400, html:not(.dark) .text-amber-300 { color: #b45309; }
+html:not(.dark) .text-amber-200\/90 { color: #92400e; }
+html:not(.dark) .text-rose-400, html:not(.dark) .text-rose-300 { color: #be123c; }
+
+html:not(.dark) .bg-zinc-900 { background-color: #f4f4f5; }
+html:not(.dark) .bg-zinc-800 { background-color: #e4e4e7; }
+html:not(.dark) .bg-zinc-800\/60 { background-color: rgba(228, 228, 231, 0.7); }
+html:not(.dark) .bg-\[\#0b0b0d\], html:not(.dark) .bg-\[\#0e0e11\], html:not(.dark) .bg-\[\#18181b\] { background-color: #ffffff; }
+html:not(.dark) .border-zinc-700 { border-color: #d4d4d8; }
+html:not(.dark) .placeholder\:text-zinc-600::placeholder, html:not(.dark) .placeholder\:text-zinc-500::placeholder { color: #94a3b8; }
+
+html:not(.dark) .hover\:text-zinc-100:hover, html:not(.dark) .hover\:text-white:hover { color: #020617; }
+html:not(.dark) .hover\:text-zinc-200:hover, html:not(.dark) .hover\:text-zinc-300:hover { color: #0f172a; }
+html:not(.dark) .hover\:text-rose-400:hover { color: #be123c; }
+html:not(.dark) .hover\:bg-zinc-900\/50:hover, html:not(.dark) .hover\:bg-zinc-900\/60:hover { background-color: #f4f4f5; }
+html:not(.dark) .hover\:bg-zinc-800:hover, html:not(.dark) .hover\:bg-zinc-800\/70:hover { background-color: #e4e4e7; }
+html:not(.dark) .hover\:border-zinc-400:hover, html:not(.dark) .hover\:border-zinc-500:hover { border-color: #a1a1aa; }
+html:not(.dark) .focus\:bg-zinc-800\/70:focus, html:not(.dark) .data-\[selected\=true\]\:bg-zinc-800\/80[data-selected="true"] { background-color: #f4f4f5; }
+html:not(.dark) .focus\:text-zinc-100:focus, html:not(.dark) .data-\[selected\=true\]\:text-zinc-100[data-selected="true"] { color: #0f172a; }
+html:not(.dark) .focus\:text-rose-300:focus { color: #9f1239; }
+html:not(.dark) [role="switch"] > span { box-shadow: 0 0 0 1px #d4d4d8; }
+
 @layer base {
   :root {
     --background: 240 10% 4%;

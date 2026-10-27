@@ -6,6 +6,7 @@ import { useKeys } from "../hooks/useGateway";
 import { fmtAgo, fmtCompact, fmtDate, fmtInt, maskKey } from "../lib/format";
 import { PageHeader, Panel, Skeleton, Td, Th, btnGhost, btnPrimary, btnSecondary } from "../components/ui";
 import { toast } from "sonner";
+import { usePrefs } from "@/preferences/PreferencesContext";
 
 const StatusPill = ({ status }) => (
   <span className={`inline-flex items-center gap-1.5 text-xs ${status === "active" ? "text-emerald-400" : "text-zinc-500"}`}>
@@ -76,13 +77,14 @@ export default function ApiKeys() {
     setTarget(null);
   };
   const create = () => setCreateOpen(true);
+  const { t } = usePrefs();
 
   return (
     <div data-testid="api-keys-page">
       <PageHeader
-        title="API Keys"
-        description={`Secret keys for the ${env} environment. Full tokens are shown once at creation.`}
-        actions={<button type="button" onClick={create} data-testid="create-key-button" className={btnPrimary}><Plus className="h-3.5 w-3.5" />Create secret key</button>}
+        title={t("console.nav.keys")}
+        description={t("console.keys.desc", { env })}
+        actions={<button type="button" onClick={create} data-testid="create-key-button" className={btnPrimary}><Plus className="h-3.5 w-3.5" />{t("console.keys.create")}</button>}
       />
       <div className="px-4 py-6 sm:px-8">
         <Panel testId="keys-table-panel">

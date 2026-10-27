@@ -1,6 +1,6 @@
 import { useRef } from "react";
 
-export const Spotlight = () => {
+export const Spotlight = ({ caption }) => {
   const ref = useRef(null);
   const onMove = (e) => {
     const r = ref.current.getBoundingClientRect();
@@ -17,7 +17,7 @@ export const Spotlight = () => {
     >
       <img src="/img/rack.jpg" alt="Network cabling in a server rack" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-70 transition-transform duration-700 hover:scale-105" />
       <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(260px circle at var(--x) var(--y), transparent 0%, rgba(9,9,11,0.82) 70%)" }} />
-      <figcaption className="absolute bottom-5 left-5 font-mono text-xs text-zinc-300">Runs inside your network</figcaption>
+      <figcaption className="absolute bottom-5 left-5 font-mono text-xs text-zinc-300">{caption}</figcaption>
     </figure>
   );
 };

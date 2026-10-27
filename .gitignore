@@ -142,3 +142,4 @@ Thumbs.db
 # ---------- Misc ----------
 tmp/
 .cache/
+frontend/node_modules/.cache/default-development/3.pack

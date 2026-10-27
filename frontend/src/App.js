@@ -16,6 +16,7 @@ import AuthLayout from "@/auth/AuthLayout";
 import SignIn from "@/auth/pages/SignIn";
 import SignUp from "@/auth/pages/SignUp";
 import ForgotPassword from "@/auth/pages/ForgotPassword";
+import { PreferencesProvider, ThemeSync, useEffectiveTheme } from "@/preferences/PreferencesContext";
 
 const PAGES = [
   { path: "/docs", title: "Documentation", body: "API reference and quickstart guides are being written. [DOCS URL]" },
@@ -23,12 +24,18 @@ const PAGES = [
   { path: "/security", title: "Security policy", body: "Responsible disclosure policy and contact. [SECURITY POLICY]" },
 ];
 
+const ThemedToaster = () => (
+  <Toaster theme={useEffectiveTheme()} position="bottom-right" toastOptions={{ style: { background: "var(--surface)", border: "1px solid var(--line)", color: "var(--ink)", borderRadius: 6 } }} />
+);
+
 function App() {
   return (
+    <PreferencesProvider>
     <AuthProvider>
     <BrowserRouter>
+      <ThemeSync />
       <SmoothScroll />
-      <Toaster theme="dark" position="bottom-right" toastOptions={{ style: { background: "#111114", border: "1px solid #232327", color: "#f4f4f5", borderRadius: 6 } }} />
+      <ThemedToaster />
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/health" element={<Health />} />
@@ -55,6 +62,7 @@ function App() {
       </Routes>
     </BrowserRouter>
     </AuthProvider>
+    </PreferencesProvider>
   );
 }
 

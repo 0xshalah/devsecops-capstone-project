@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Send, ShieldCheck, ShieldX } from "lucide-react";
+import { usePrefs } from "@/preferences/PreferencesContext";
 import { useConsole } from "../ConsoleContext";
 import { gatewayApi } from "../services/gatewayApi";
 import { MODELS } from "../services/mockData";
@@ -49,6 +50,7 @@ const ResponsePane = ({ result, pending }) => {
 
 export default function Playground() {
   const { strictDefault } = useConsole();
+  const { t } = usePrefs();
   const [model, setModel] = useState(MODELS[0].id);
   const [system, setSystem] = useState("You are a concise assistant for internal engineering questions.");
   const [prompt, setPrompt] = useState(EXAMPLES.safe);
@@ -68,7 +70,7 @@ export default function Playground() {
     <div data-testid="playground-page" className="grid min-h-full lg:h-full lg:grid-cols-2">
       <section className="flex min-w-0 flex-col border-b border-[var(--line)] lg:overflow-y-auto lg:border-b-0 lg:border-r">
         <div className="border-b border-[var(--line)] px-4 py-5 sm:px-6">
-          <h1 data-testid="page-title" className="font-display text-2xl font-bold tracking-[-0.02em] text-zinc-100">Gateway Playground</h1>
+          <h1 data-testid="page-title" className="font-display text-2xl font-bold tracking-[-0.02em] text-zinc-100">{t("console.nav.playground")}</h1>
           <p className="mt-1.5 truncate font-mono text-xs text-zinc-500"><span className="text-[var(--accent)]">POST</span> {GATEWAY_BASE_URL}/chat</p>
         </div>
         <div className="flex-1 space-y-5 px-4 py-5 sm:px-6" onKeyDown={onKeyDown}>
