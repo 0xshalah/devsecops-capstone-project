@@ -10,7 +10,7 @@ BASE_URL = os.environ["REACT_APP_BACKEND_URL"].rstrip("/") if os.environ.get("RE
 API = f"{BASE_URL}/api"
 DEMO_EMAIL = "demo@tollgate.dev"
 DEMO_PASSWORD = "TollgateDemo!2026"
-ALLOWED_ORIGIN = "https://devsecops-capstone--1tvkdwfj.preview.emergentagent.com"
+ALLOWED_ORIGIN = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")
 
 
 def _email(tag="user"):
