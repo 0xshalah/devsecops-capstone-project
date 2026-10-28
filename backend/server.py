@@ -20,6 +20,8 @@ from database.seed import seed_database  # noqa: E402
 from db import client, db  # noqa: E402
 from routes.auth import router as auth_router  # noqa: E402
 from routes.workspaces import router as workspaces_router  # noqa: E402
+from routes.keys import router as keys_router  # noqa: E402
+from routes.gateway import router as gateway_router  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -58,6 +60,8 @@ async def health():
 
 api_router.include_router(auth_router)
 api_router.include_router(workspaces_router)
+api_router.include_router(keys_router)
+api_router.include_router(gateway_router)
 app.include_router(api_router)
 
 cors_origins = [o.strip() for o in os.environ["CORS_ORIGINS"].split(",") if o.strip()]

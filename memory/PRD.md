@@ -23,7 +23,11 @@ Phase 4: Account menu and profile management. Header account dropdown (session i
 
 - 2026-10-27: Account menu (src/console/components/AccountMenu.jsx, Radix dropdown with click outside close) and Profile Settings dialog (ProfileDialog.jsx). AuthContext.updateProfile persists to localStorage and updates header instantly. Sidebar account block removed, sign out lives in the header menu.
 
-## MOCKED
+## Backend & DevSecOps Plan (TASK.md)
+- 2026-10-28: Backend Phase 1 (P0) done and verified: DB init/indexes + seed (lifespan), strict Pydantic schemas, JWT auth (signup/signin/me/profile), lockout, get_current_user / verify_workspace_access / require_roles / verify_api_key_scope, CORS allowlist. Frontend AuthContext uses real API. Tests: backend/tests/test_phase1_auth.py (22/22), iteration_1.
+- Next: Phase 2 (API keys CRUD, guardrail engine, playground/gateway endpoints).
+
+## MOCKED (updated: auth is now real; below still applies to console data)
 - Auth is client-side only: session in localStorage `tollgate.session`, accounts (name only) in `tollgate.accounts`, passwords not checked, Google sign-in simulated, profile updates and user/org IDs are local only (IDs derived from email hash), reset email not sent.
 - Keys, metrics, traffic, logs, and /v1/chat responses come from in-memory mock client (resets on reload). Health is real.
 

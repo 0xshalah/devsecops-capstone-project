@@ -19,7 +19,7 @@ export const fmtAgo = (ts) => {
   return `${Math.floor(s / 86400)}d ago`;
 };
 
-export const maskKey = (k) => `nx_${k.env}_...${k.last4}`;
+export const maskKey = (k) => k.prefix || `sk-gw-${k.env}-...${k.last4}`;
 
 export const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 export const MOD = IS_MAC ? "\u2318" : "Ctrl";

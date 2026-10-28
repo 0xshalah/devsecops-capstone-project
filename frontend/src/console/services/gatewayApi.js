@@ -1,23 +1,21 @@
-// Mock gateway client. Replace each method body with a fetch to the FastAPI backend; signatures stay the same.
-import { MODELS, seedKeys, seedLogs, seedTraffic, hex } from "./mockData";
+// Keys and playground use the FastAPI backend. Overview and logs stay on seeded mock data until Phase 3.
+import { apiRequest } from "@/lib/apiClient";
+import { seedLogs, seedTraffic } from "./mockData";
 
 const now = Date.now();
-const db = { keys: seedKeys(now), logs: seedLogs(now), traffic: seedTraffic(now) };
+const db = { logs: seedLogs(now), traffic: seedTraffic(now) };
 
 const wait = (min = 120, max = 320) => new Promise((r) => setTimeout(r, min + Math.random() * (max - min)));
 const clone = (v) => JSON.parse(JSON.stringify(v));
 
-const secureHex = (bytes) => Array.from(crypto.getRandomValues(new Uint8Array(bytes)), (b) => b.toString(16).padStart(2, "0")).join("");
+const toKey = (k) => ({
+  ...k,
+  rpm: k.rateLimit,
+  createdAt: Date.parse(k.createdAt),
+  lastUsed: k.lastUsed ? Date.parse(k.lastUsed) : null,
+});
 
-const INJECTION = [
-  /ignore (all |any )?(the )?(previous|prior|above) instructions/i,
-  /disregard (all |your |the )?(rules|instructions|guidelines)/i,
-  /reveal (your |the )?(system prompt|hidden instructions)/i,
-  /you are now (dan|in developer mode|unrestricted)/i,
-  /\bjailbreak\b/i,
-];
-
-const estimateTokens = (text) => Math.max(1, Math.ceil(text.trim().length / 4));
+const GUARDRAIL = { blocked: "BLOCKED", redacted: "REDACTED", allowed: "PASSED" };
 
 const summarize = () => {
   const t = db.traffic;
@@ -38,28 +36,25 @@ const topRules = () => {
 
 export const gatewayApi = {
   async listKeys(env) {
-    await wait();
-    return clone(db.keys.filter((k) => k.env === env).sort((a, b) => b.createdAt - a.createdAt));
+    return (await apiRequest(`/keys?env=${encodeURIComponent(env)}`)).map(toKey);
   },
 
-  async createKey({ name, rpm, quota, env }) {
-    await wait(250, 450);
-    const secret = `nx_${env}_${secureHex(16)}`;
-    const key = { id: `key_${hex(8)}`, name, env, last4: secret.slice(-4), rpm, quota, createdAt: Date.now(), status: "active", lastUsed: null };
-    db.keys.unshift(key);
-    return { key: clone(key), secret };
+  async createKey({ name, rpm, quota, env, scopes }) {
+    const res = await apiRequest("/keys", { method: "POST", body: { name, env, scopes, rateLimit: rpm, quota } });
+    return { key: toKey(res.key), secret: res.secret };
+  },
+
+  async rotateKey(id) {
+    const res = await apiRequest(`/keys/${id}/rotate`, { method: "POST" });
+    return { key: toKey(res.key), secret: res.secret };
   },
 
   async revokeKey(id) {
-    await wait();
-    const key = db.keys.find((k) => k.id === id);
-    key.status = "revoked";
-    return clone(key);
+    return toKey(await apiRequest(`/keys/${id}`, { method: "PATCH", body: { status: "revoked" } }));
   },
 
   async deleteKey(id) {
-    await wait();
-    db.keys = db.keys.filter((k) => k.id !== id);
+    return apiRequest(`/keys/${id}`, { method: "DELETE" });
   },
 
   async getOverview() {
@@ -73,47 +68,14 @@ export const gatewayApi = {
   },
 
   async sendChat({ model, system, prompt, strict }) {
-    const started = performance.now();
-    const match = INJECTION.map((re) => prompt.match(re) || system.match(re)).find(Boolean);
-    const blocked = strict && Boolean(match);
-    await wait(blocked ? 20 : 180, blocked ? 60 : 520);
-    const latency = Math.round(performance.now() - started);
-    const requestId = `req_${hex(12)}`;
-    const promptTokens = estimateTokens(`${system} ${prompt}`);
-    const route = MODELS.find((m) => m.id === model)?.route;
-
-    if (blocked) {
-      const rule = "Prompt Injection Filter: Blocked keyword detected";
-      db.logs.unshift({ id: requestId, ts: Date.now(), endpoint: "/v1/chat", model, key: "playground", status: 403, latency, tokens: 0, rule });
-      return {
-        status: 403,
-        latency,
-        tokens: { prompt: promptTokens, completion: 0, total: promptTokens },
-        guardrail: { status: "BLOCKED", rule, match: match[0] },
-        body: { error: { type: "guardrail_violation", code: 403, rule: "prompt_injection_filter", message: `Blocked keyword detected: "${match[0]}"`, request_id: requestId } },
-      };
-    }
-
-    const content = `Sample response from ${model}. The gateway is not wired to a provider yet, so this text is generated locally. Your request used about ${promptTokens} prompt tokens.`;
-    const completionTokens = estimateTokens(content);
-    const rule = match ? "Prompt Injection Filter: Pattern matched, monitor mode" : null;
-    db.logs.unshift({ id: requestId, ts: Date.now(), endpoint: "/v1/chat", model, key: "playground", status: 200, latency, tokens: promptTokens + completionTokens, rule });
+    const r = await apiRequest("/playground/evaluate", { method: "POST", body: { model, system, prompt, strict } });
+    const top = r.detectedThreats[0];
     return {
-      status: 200,
-      latency,
-      tokens: { prompt: promptTokens, completion: completionTokens, total: promptTokens + completionTokens },
-      guardrail: { status: "PASSED", rule, match: match?.[0] || null },
-      body: {
-        id: `chatcmpl_${hex(16)}`,
-        object: "chat.completion",
-        created: Math.floor(Date.now() / 1000),
-        model,
-        route,
-        choices: [{ index: 0, message: { role: "assistant", content }, finish_reason: "stop" }],
-        usage: { prompt_tokens: promptTokens, completion_tokens: completionTokens, total_tokens: promptTokens + completionTokens },
-        guardrail: { strict, result: "passed", flagged: Boolean(match) },
-        request_id: requestId,
-      },
+      status: r.httpStatus,
+      latency: r.latencyMs,
+      tokens: r.tokens,
+      guardrail: { status: GUARDRAIL[r.status], rule: top?.rule || null, match: top?.match || null, flagged: r.flagged },
+      body: r,
     };
   },
 };

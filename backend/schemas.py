@@ -183,6 +183,15 @@ class ApiKeyInDB(DBModel):
     status: KeyStatus
     created_at: datetime
     last_used_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    revoked_at: Optional[datetime] = None
+    rotated_at: Optional[datetime] = None
+    deleted_at: Optional[datetime] = None
+
+
+class ApiKeyDeleteResponse(Output):
+    id: str
+    result: Literal["revoked", "deleted"]
 
 
 class ApiKeyResponseSchema(Output):
@@ -209,6 +218,58 @@ class ApiKeyResponseSchema(Output):
 class ApiKeyCreatedResponse(Output):
     key: ApiKeyResponseSchema
     secret: str
+
+
+# ---------- Gateway / Playground ----------
+ModelId = Literal["nexus-fast-v1", "gpt-4o-route", "claude-route"]
+
+
+class PlaygroundEvaluateRequest(StrictInput):
+    model: ModelId = "nexus-fast-v1"
+    system: str = Field("", max_length=8000)
+    prompt: str = Field(min_length=1, max_length=16000)
+    strict: bool = True
+
+
+class ChatMessage(StrictInput):
+    role: Literal["system", "user", "assistant"]
+    content: str = Field(min_length=1, max_length=32000)
+
+
+class GatewayCompletionRequest(StrictInput):
+    model: ModelId = "nexus-fast-v1"
+    messages: List[ChatMessage] = Field(min_length=1, max_length=50)
+
+
+class ThreatSchema(Output):
+    type: Literal["prompt_injection", "pii", "toxicity"]
+    category: str
+    rule: str
+    severity: Severity
+    score: float
+    match: str
+
+
+class TokenUsage(Output):
+    prompt: int
+    completion: int
+    total: int
+
+
+class EvaluationResponse(Output):
+    requestId: str
+    model: str
+    status: Literal["allowed", "blocked", "redacted"]
+    httpStatus: int
+    action: Action
+    flagged: bool
+    riskScore: float = Field(ge=0.0, le=1.0)
+    detectedThreats: List[ThreatSchema]
+    outputThreats: List[ThreatSchema]
+    redactedPrompt: str
+    response: Optional[str]
+    latencyMs: int
+    tokens: TokenUsage
 
 
 # ---------- Security logs ----------
