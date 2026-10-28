@@ -22,7 +22,7 @@ export const useAuthForm = (initial, validate) => {
 
   const run = async (kind, fn) => {
     setPending(kind);
-    try { await fn(); } catch { toast.error("Something went wrong. Try again."); setPending(null); }
+    try { await fn(); } catch (e) { toast.error(e?.message || "Something went wrong. Try again."); setPending(null); }
   };
 
   const submit = (fn) => (e) => {

@@ -35,7 +35,7 @@ export default function AuthLayout() {
             </div>
           </main>
           <footer className="flex h-14 items-center text-xs text-zinc-500">
-            Demo authentication. Your session is stored in this browser only.
+            Signed session tokens. Sessions expire 1 hour after sign in.
           </footer>
         </div>
         <AccessPanel />

@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/auth/AuthContext";
-import { checkEmail } from "@/auth/validate";
 import { PROFILE } from "@/constants/testIds";
 import { useConsole } from "../ConsoleContext";
 import { btnGhost, btnPrimary, btnSecondary, copyText, inputCls, labelCls } from "./ui";
@@ -23,23 +22,27 @@ const IdRow = ({ label, value, testId, copyId }) => (
 const ProfileForm = ({ onClose }) => {
   const { session, updateProfile } = useAuth();
   const [name, setName] = useState(session.name);
-  const [email, setEmail] = useState(session.email);
   const [errors, setErrors] = useState({});
   const [pending, setPending] = useState(false);
   const [saved, setSaved] = useState(false);
-  const dirty = name.trim() !== session.name || email.trim() !== session.email;
+  const dirty = name.trim() !== session.name;
 
   const edit = (setter, key) => (e) => { setter(e.target.value); setErrors((x) => ({ ...x, [key]: "" })); setSaved(false); };
 
   const submit = async (e) => {
     e.preventDefault();
-    const next = { name: name.trim() ? "" : "Display name is required.", email: checkEmail(email) };
+    const next = { name: name.trim() ? "" : "Display name is required." };
     setErrors(next);
-    if (next.name || next.email) return;
+    if (next.name) return;
     setPending(true);
-    await updateProfile({ name: name.trim(), email: email.trim() });
-    setPending(false);
-    setSaved(true);
+    try {
+      await updateProfile({ name: name.trim() });
+      setSaved(true);
+    } catch (err) {
+      setErrors({ name: err.message });
+    } finally {
+      setPending(false);
+    }
   };
 
   return (
@@ -51,8 +54,8 @@ const ProfileForm = ({ onClose }) => {
       </div>
       <div>
         <label htmlFor="profile-email" className={labelCls}>Email address</label>
-        <input id="profile-email" type="email" value={email} onChange={edit(setEmail, "email")} data-testid={PROFILE.emailInput} className={`${inputCls} font-mono`} />
-        {errors.email && <p data-testid={PROFILE.emailError} className="mt-1.5 text-xs text-rose-400">{errors.email}</p>}
+        <input id="profile-email" type="email" value={session.email} readOnly aria-readonly="true" data-testid={PROFILE.emailInput} className={`${inputCls} cursor-not-allowed font-mono opacity-70`} />
+        <p className="mt-1.5 text-[11px] text-zinc-600">Sign-in email cannot be changed here.</p>
       </div>
       <div>
         <div className="mb-1.5 flex items-center justify-between">
