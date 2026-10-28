@@ -8,7 +8,7 @@ from db import db
 from guardrails import upstream
 
 router = APIRouter(tags=["health"])
-VERSION = "0.3.0"
+VERSION = "0.4.0"
 STARTED_AT = datetime.now(timezone.utc)
 _START = time.monotonic()
 DB_TIMEOUT_SECONDS = 2

@@ -30,6 +30,9 @@ INDEXES = {
     "gateway_metrics": [
         IndexModel([("workspace_id", ASCENDING), ("bucket", DESCENDING)], name="workspace_id_bucket"),
     ],
+    "rate_limits": [
+        IndexModel([("expires_at", ASCENDING)], expireAfterSeconds=0, name="ttl_expires_at"),
+    ],
     "login_attempts": [
         IndexModel([("identifier", ASCENDING)], unique=True, name="uniq_identifier"),
         IndexModel([("expires_at", ASCENDING)], expireAfterSeconds=0, name="ttl_expires_at"),

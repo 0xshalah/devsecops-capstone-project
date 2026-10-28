@@ -5,6 +5,7 @@ from pymongo.errors import DuplicateKeyError
 
 from accounts import create_account
 from db import db
+from ratelimit import client_ip
 from schemas import (AuthResponse, CurrentUser, MeResponse, ProfileUpdateSchema, SignInRequest, SignUpRequest,
                      UserResponseSchema, WorkspaceResponseSchema)
 from security import DUMMY_PASSWORD_HASH, create_access_token, get_current_user, verify_password_async
@@ -14,11 +15,6 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 MAX_FAILED_ATTEMPTS = 5
 LOCKOUT_WINDOW = timedelta(minutes=15)
 INVALID_CREDENTIALS = "Invalid email or password"
-
-
-def _client_ip(request: Request) -> str:
-    forwarded = request.headers.get("x-forwarded-for", "")
-    return forwarded.split(",")[0].strip() or (request.client.host if request.client else "unknown")
 
 
 def _auth_payload(user: dict, workspace: dict) -> AuthResponse:
@@ -50,7 +46,7 @@ async def signup(body: SignUpRequest):
 @router.post("/signin", response_model=AuthResponse)
 async def signin(body: SignInRequest, request: Request):
     email = body.email.lower()
-    identifier = f"{_client_ip(request)}:{email}"
+    identifier = f"{client_ip(request)}:{email}"
     now = datetime.now(timezone.utc)
 
     attempt = await db.login_attempts.find_one({"identifier": identifier}, {"_id": 0})

@@ -3,6 +3,7 @@ from typing import Optional
 
 from guardrails import pii
 from guardrails.engine import Evaluation
+from ids import new_id
 from schemas import PiiToggles, SecurityLogInDB
 
 SNIPPET_LEN = 120
@@ -38,5 +39,17 @@ async def record_log(db, *, ev: Evaluation, request_id: str, workspace_id: str, 
         threat_type=top.type if top else None, rule=top.rule if top else None,
         severity=top.severity if top else "low", action=action, status=status, http_status=http_status,
         latency_ms=latency_ms, tokens=0 if status == "blocked" else tokens,
+    )
+    await db.security_logs.insert_one(log.model_dump())
+
+
+async def record_throttle(db, *, workspace_id: str, user_id: str, key_id: Optional[str], key_name: str, endpoint: str,
+                          rule: str) -> None:
+    """Audit entry for a request rejected by the rate limiter (429)."""
+    log = SecurityLogInDB(
+        id=new_id("req"), workspace_id=workspace_id, user_id=user_id, key_id=key_id, key_name=key_name,
+        timestamp=datetime.now(timezone.utc), endpoint=endpoint, model="n/a",
+        prompt_snippet="Request rejected by rate limiter", threat_type="rate_limit", rule=rule, severity="low",
+        action="throttle", status="flagged", http_status=429, latency_ms=0, tokens=0,
     )
     await db.security_logs.insert_one(log.model_dump())

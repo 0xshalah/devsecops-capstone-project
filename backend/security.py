@@ -8,10 +8,11 @@ from typing import List, Optional
 
 import bcrypt
 import jwt
-from fastapi import Depends, Header, HTTPException
+from fastapi import Depends, Header, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from db import db
+from ratelimit import enforce
 from schemas import ApiKeyContext, CurrentUser
 
 JWT_ALGORITHM = "HS256"
@@ -115,6 +116,7 @@ def require_roles(allowed_roles: List[str]):
 
 def verify_api_key_scope(required_scope: str):
     async def scope_checker(
+        request: Request,
         x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
         creds: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
     ) -> ApiKeyContext:
@@ -127,6 +129,11 @@ def verify_api_key_scope(required_scope: str):
             raise _unauthorized("Invalid or revoked API key")
         if required_scope not in key["scopes"]:
             raise HTTPException(status_code=403, detail=f"API key is missing required scope: {required_scope}")
+        await enforce(
+            f"key:{key['id']}", key["rate_limit"], scope="key", detail="API key rate limit exceeded",
+            log={"workspace_id": key["workspace_id"], "user_id": key["user_id"], "key_id": key["id"],
+                 "key_name": key["name"], "endpoint": request.url.path, "rule": "Rate Limit: Key exceeded RPM budget"},
+        )
         await db.api_keys.update_one(
             {"id": key["id"], "workspace_id": key["workspace_id"]},
             {"$set": {"last_used_at": datetime.now(timezone.utc)}},

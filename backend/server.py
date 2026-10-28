@@ -9,11 +9,16 @@ sys.path.append(str(ROOT_DIR.parent))  # exposes the top-level database/ package
 
 import logging  # noqa: E402
 import os  # noqa: E402
+import secrets  # noqa: E402
 from contextlib import asynccontextmanager  # noqa: E402
+from typing import Optional  # noqa: E402
 
-from fastapi import APIRouter, FastAPI  # noqa: E402
+from fastapi import APIRouter, FastAPI, Header, HTTPException, Request, Response  # noqa: E402
+from fastapi.responses import JSONResponse  # noqa: E402
 from starlette.middleware.cors import CORSMiddleware  # noqa: E402
 
+import observability  # noqa: E402
+import ratelimit  # noqa: E402
 from database.init_db import init_db  # noqa: E402
 from database.seed import seed_database  # noqa: E402
 from db import client, db  # noqa: E402
@@ -28,6 +33,9 @@ from routes.settings import router as settings_router  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+
+IP_LIMIT_PER_MINUTE = int(os.environ["RATE_LIMIT_IP_PER_MINUTE"])
+RATE_LIMIT_EXEMPT = ("/api/health",)  # probes must never be throttled
 
 
 @asynccontextmanager
@@ -52,6 +60,32 @@ for r in (health_router, auth_router, workspaces_router, keys_router, gateway_ro
     api_router.include_router(r)
 app.include_router(api_router)
 
+
+@app.get("/metrics", include_in_schema=False)
+async def prometheus_metrics(authorization: Optional[str] = Header(None)):
+    """Prometheus scrape target. When METRICS_TOKEN is set, scrapers must send it as a Bearer token."""
+    token = os.environ["METRICS_TOKEN"]
+    if token and not secrets.compare_digest((authorization or "").encode(), f"Bearer {token}".encode()):
+        raise HTTPException(status_code=401, detail="Not authenticated", headers={"WWW-Authenticate": "Bearer"})
+    body, content_type = observability.render()
+    return Response(content=body, media_type=content_type)
+
+
+@app.middleware("http")
+async def ip_rate_limit(request: Request, call_next):
+    path = request.url.path
+    if request.method == "OPTIONS" or not path.startswith("/api") or path.startswith(RATE_LIMIT_EXEMPT):
+        return await call_next(request)
+    decision = await ratelimit.hit(f"ip:{ratelimit.client_ip(request)}", IP_LIMIT_PER_MINUTE)
+    if not decision.allowed:
+        observability.RATE_LIMITED.labels(scope="ip").inc()
+        return JSONResponse(status_code=429, content={"detail": "Too many requests from this IP address"},
+                            headers=decision.headers())
+    return await call_next(request)
+
+
+app.middleware("http")(observability.track_requests)
+
 cors_origins = [o.strip() for o in os.environ["CORS_ORIGINS"].split(",") if o.strip()]
 allow_wildcard = "*" in cors_origins
 app.add_middleware(
@@ -60,4 +94,5 @@ app.add_middleware(
     allow_credentials=not allow_wildcard,  # browsers reject credentials with a wildcard origin
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-API-Key"],
+    expose_headers=["Retry-After", "X-RateLimit-Limit", "X-RateLimit-Remaining"],
 )

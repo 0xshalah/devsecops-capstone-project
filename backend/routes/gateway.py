@@ -6,6 +6,8 @@ from db import db
 from guardrails import upstream
 from guardrails.engine import Evaluation, estimate_tokens, run
 from ids import new_id
+from observability import record_evaluation
+from ratelimit import enforce
 from routes.settings import ensure_settings
 from schemas import (ApiKeyContext, CurrentUser, EvaluationResponse, GatewayCompletionRequest, GatewaySettingsInDB,
                      PlaygroundEvaluateRequest, ThreatSchema, TokenUsage)
@@ -34,11 +36,17 @@ def _response(ev: Evaluation, latency: int, model: str, prompt_text: str) -> Eva
 
 
 async def _evaluate_and_log(texts, roles, model, settings, monitor, *, workspace_id, user_id, key_id, key_name, endpoint):
+    await enforce(
+        f"ws:{workspace_id}", settings["global_rate_limit"], scope="workspace", detail="Workspace rate limit exceeded",
+        log={"workspace_id": workspace_id, "user_id": user_id, "key_id": key_id, "key_name": key_name,
+             "endpoint": endpoint, "rule": "Rate Limit: Workspace exceeded global RPM budget"},
+    )
     ev, latency = await run(texts, roles, model, settings, monitor=monitor)
     result = _response(ev, latency, model, " ".join(texts))
     await record_log(db, ev=ev, request_id=result.requestId, workspace_id=workspace_id, user_id=user_id, key_id=key_id,
                      key_name=key_name, endpoint=endpoint, model=model, prompt=texts[-1], latency_ms=latency,
                      tokens=result.tokens.total)
+    record_evaluation(endpoint, result.status, ev.threats + ev.output_threats)
     return result
 
 
