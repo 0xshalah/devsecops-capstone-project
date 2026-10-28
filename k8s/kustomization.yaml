@@ -1,0 +1,17 @@
+# kubectl apply -k k8s/   (create the secrets first, see secret.example.yaml)
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: tollgate
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - mongodb.yaml
+  - backend.yaml
+  - frontend.yaml
+  - ingress.yaml
+  - networkpolicy.yaml
+images:
+  - name: ghcr.io/0xshalah/tollgate-backend
+    newTag: latest
+  - name: ghcr.io/0xshalah/tollgate-frontend
+    newTag: latest

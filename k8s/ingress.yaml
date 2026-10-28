@@ -1,0 +1,39 @@
+# Requires ingress-nginx and cert-manager (ClusterIssuer "letsencrypt-prod").
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tollgate
+  namespace: tollgate
+  labels:
+    app.kubernetes.io/part-of: tollgate
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: 1m
+    nginx.ingress.kubernetes.io/limit-rps: "50"
+    nginx.ingress.kubernetes.io/server-snippet: |
+      location = /metrics { return 404; }
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains";
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: [tollgate.example.com]
+      secretName: tollgate-tls
+  rules:
+    - host: tollgate.example.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: tollgate-backend
+                port: {name: http}
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tollgate-frontend
+                port: {name: http}

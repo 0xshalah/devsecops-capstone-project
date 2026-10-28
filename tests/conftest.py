@@ -23,6 +23,16 @@ from server import app  # noqa: E402
 from tests.helpers import STRONG_PASSWORD, bearer, unique_email  # noqa: E402
 
 
+def pytest_sessionstart(session):
+    # Controller only (not xdist workers): drop stale sliding-window counters left by earlier runs.
+    if hasattr(session.config, "workerinput"):
+        return
+    from pymongo import MongoClient
+    with MongoClient(os.environ["MONGO_URL"]) as mongo:
+        mongo[os.environ["DB_NAME"]].rate_limits.delete_many({})
+
+
+
 @pytest_asyncio.fixture(scope="session")
 async def client():
     base_url = os.environ.get("TEST_BASE_URL", "").rstrip("/")

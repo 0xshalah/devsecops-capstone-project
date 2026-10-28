@@ -1,0 +1,207 @@
+// Tollgate DevSecOps pipeline.
+// Required Jenkins credentials:
+//   registry-creds   (username/password)  container registry push
+//   kubeconfig-tollgate (secret file)     cluster access for deploy
+//   sonar-token      (secret text)        optional SonarQube analysis
+// Required agent tools: docker, git, python3, node 20 + yarn, kubectl, trivy, gitleaks.
+pipeline {
+    agent any
+
+    options {
+        timestamps()
+        timeout(time: 60, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '20'))
+        disableConcurrentBuilds()
+    }
+
+    parameters {
+        booleanParam(name: 'DEPLOY', defaultValue: false, description: 'Deploy to Kubernetes after a green build (main branch only)')
+        booleanParam(name: 'RUN_DAST', defaultValue: false, description: 'Run OWASP ZAP baseline scan against STAGING_URL')
+        string(name: 'STAGING_URL', defaultValue: 'https://staging.tollgate.example.com', description: 'Target for DAST')
+    }
+
+    environment {
+        REGISTRY        = 'ghcr.io/0xshalah'
+        BACKEND_IMAGE   = "${REGISTRY}/tollgate-backend"
+        FRONTEND_IMAGE  = "${REGISTRY}/tollgate-frontend"
+        IMAGE_TAG       = "${env.GIT_COMMIT ? env.GIT_COMMIT.take(12) : env.BUILD_NUMBER}"
+        REPORTS         = 'test_reports'
+        TEST_MONGO      = "tollgate-ci-mongo-${env.BUILD_NUMBER}"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+                sh 'mkdir -p ${REPORTS}/pytest ${REPORTS}/security'
+            }
+        }
+
+        stage('Secret Scan') {
+            steps {
+                sh 'gitleaks detect --source . --no-banner --redact --report-format sarif --report-path ${REPORTS}/security/gitleaks.sarif'
+            }
+        }
+
+        stage('Static Analysis & Dependencies') {
+            parallel {
+                stage('SAST: Bandit') {
+                    steps {
+                        sh '''
+                            python3 -m venv .venv-sec && . .venv-sec/bin/activate
+                            pip install -q bandit pip-audit semgrep
+                            bandit -r backend database -x backend/tests -ll -f json -o ${REPORTS}/security/bandit.json
+                        '''
+                    }
+                }
+                stage('SAST: Semgrep') {
+                    steps {
+                        sh '''
+                            . .venv-sec/bin/activate || (python3 -m venv .venv-sec && . .venv-sec/bin/activate && pip install -q semgrep)
+                            semgrep scan --config p/owasp-top-ten --config p/python --config p/react --error \
+                              --sarif --output ${REPORTS}/security/semgrep.sarif backend database frontend/src
+                        '''
+                    }
+                }
+                stage('SCA: Python') {
+                    steps {
+                        sh '''
+                            . .venv-sec/bin/activate || (python3 -m venv .venv-sec && . .venv-sec/bin/activate && pip install -q pip-audit)
+                            pip-audit -r backend/requirements.prod.txt --strict -f json -o ${REPORTS}/security/pip-audit.json
+                        '''
+                    }
+                }
+                stage('SCA: Node') {
+                    steps {
+                        dir('frontend') {
+                            sh 'yarn install --frozen-lockfile --ignore-scripts'
+                            sh 'yarn audit --level high --groups dependencies || [ $? -lt 8 ]'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Unit & Security Tests (pytest)') {
+            steps {
+                sh 'docker run -d --rm --name ${TEST_MONGO} -p 27017 mongo:7.0'
+                sh '''
+                    MONGO_PORT=$(docker port ${TEST_MONGO} 27017 | head -n1 | cut -d: -f2)
+                    python3 -m venv .venv-test && . .venv-test/bin/activate
+                    pip install -q -r backend/requirements.prod.txt pytest pytest-asyncio pytest-xdist
+                    export MONGO_URL="mongodb://127.0.0.1:${MONGO_PORT}" DB_NAME="tollgate_ci_${BUILD_NUMBER}"
+                    export JWT_SECRET="$(openssl rand -hex 32)" API_KEY_HMAC_SECRET="$(openssl rand -hex 32)"
+                    export JWT_EXPIRE_MINUTES=60 CORS_ORIGINS="http://localhost:3000" RATE_LIMIT_IP_PER_MINUTE=1000
+                    export METRICS_TOKEN="" DEMO_EMAIL="demo@tollgate.dev" DEMO_PASSWORD="$(openssl rand -hex 12)Aa1!"
+                    export REACT_APP_BACKEND_URL="http://localhost:8001"
+                    cd backend && pytest --junitxml=../${REPORTS}/pytest/junit.xml
+                '''
+            }
+            post {
+                always {
+                    junit allowEmptyResults: false, testResults: "${REPORTS}/pytest/junit.xml"
+                    sh 'docker rm -f ${TEST_MONGO} || true'
+                }
+            }
+        }
+
+        stage('SonarQube') {
+            when { expression { return env.SONAR_HOST_URL } }
+            steps {
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    sh '''
+                        docker run --rm -e SONAR_HOST_URL="${SONAR_HOST_URL}" -e SONAR_TOKEN="${SONAR_TOKEN}" \
+                          -v "$PWD:/usr/src" sonarsource/sonar-scanner-cli \
+                          -Dsonar.projectKey=tollgate -Dsonar.sources=backend,database,frontend/src \
+                          -Dsonar.exclusions=**/node_modules/**,**/tests/** \
+                          -Dsonar.python.xunit.reportPath=${REPORTS}/pytest/junit.xml
+                    '''
+                }
+            }
+        }
+
+        stage('Build Images') {
+            parallel {
+                stage('Backend image') {
+                    steps {
+                        sh 'docker build -f docker/backend.Dockerfile -t ${BACKEND_IMAGE}:${IMAGE_TAG} .'
+                    }
+                }
+                stage('Frontend image') {
+                    steps {
+                        sh 'docker build -f docker/frontend.Dockerfile -t ${FRONTEND_IMAGE}:${IMAGE_TAG} .'
+                    }
+                }
+            }
+        }
+
+        stage('Image & IaC Scan (Trivy)') {
+            steps {
+                sh '''
+                    for img in ${BACKEND_IMAGE}:${IMAGE_TAG} ${FRONTEND_IMAGE}:${IMAGE_TAG}; do
+                      name=$(echo "$img" | sed 's#.*/##; s#:.*##')
+                      trivy image --scanners vuln,secret --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 \
+                        --format sarif --output ${REPORTS}/security/trivy-${name}.sarif "$img"
+                      trivy image --format cyclonedx --output ${REPORTS}/security/sbom-${name}.cdx.json "$img"
+                    done
+                    trivy config --severity HIGH,CRITICAL --exit-code 1 docker k8s
+                '''
+            }
+        }
+
+        stage('Push Images') {
+            when { allOf { branch 'main'; not { changeRequest() } } }
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'registry-creds', usernameVariable: 'REG_USER', passwordVariable: 'REG_PASS')]) {
+                    sh '''
+                        echo "$REG_PASS" | docker login ghcr.io -u "$REG_USER" --password-stdin
+                        for img in ${BACKEND_IMAGE} ${FRONTEND_IMAGE}; do
+                          docker push $img:${IMAGE_TAG}
+                          docker tag $img:${IMAGE_TAG} $img:latest && docker push $img:latest
+                        done
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            when { allOf { branch 'main'; expression { return params.DEPLOY } } }
+            steps {
+                withCredentials([file(credentialsId: 'kubeconfig-tollgate', variable: 'KUBECONFIG')]) {
+                    dir('k8s') {
+                        sh '''
+                            kubectl kustomize . > /tmp/tollgate-rendered.yaml
+                            sed -i "s#\\(ghcr.io/0xshalah/tollgate-backend\\):latest#\\1:${IMAGE_TAG}#; s#\\(ghcr.io/0xshalah/tollgate-frontend\\):latest#\\1:${IMAGE_TAG}#" /tmp/tollgate-rendered.yaml
+                            kubectl apply -f /tmp/tollgate-rendered.yaml
+                            kubectl -n tollgate rollout status deploy/tollgate-backend --timeout=180s
+                            kubectl -n tollgate rollout status deploy/tollgate-frontend --timeout=180s
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('DAST (OWASP ZAP Baseline)') {
+            when { expression { return params.RUN_DAST } }
+            steps {
+                sh '''
+                    docker run --rm -v "$PWD/${REPORTS}/security:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable \
+                      zap-baseline.py -t "${STAGING_URL}" -r zap-baseline.html -J zap-baseline.json -I
+                '''
+            }
+        }
+    }
+
+    post {
+        always {
+            archiveArtifacts artifacts: "${REPORTS}/**", allowEmptyArchive: true, fingerprint: true
+            sh 'docker image prune -f || true'
+        }
+        failure {
+            echo 'Pipeline failed: check security reports under test_reports/security and pytest JUnit output.'
+        }
+        cleanup {
+            cleanWs(deleteDirs: true, disableDeferredWipeout: true, notFailBuild: true)
+        }
+    }
+}

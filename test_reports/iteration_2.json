@@ -1,0 +1,34 @@
+{
+  "summary": "Phase 4 complete. Ran /app/backend pytest (testpaths=../tests, -n 2 loadscope, asyncio auto): 86 passed, 0 failed, 0 errors, 23.6s. JUnit report at /app/test_reports/pytest/junit.xml. Covers test_auth, test_bola_bfla, test_gateway (prompt-injection block, PII redaction incl. invalid-card negative, scope enforcement, revoke/rotate, strict schema, bearer/API-key auth), test_rate_limit (sliding window math, per-key 429 with Retry-After, per-workspace limit, /api/health/live exemption) and test_health. Also live-tested the preview backend end-to-end: /api/health=200, /api/health/live=200, signin wrong-password=401 (generic 'Invalid email or password'), unknown key PATCH=404, mass-assignment PUT /api/auth/profile {role:'Owner', extra:'y'}=422 (Pydantic extra_forbidden on both fields), metrics-scoped key on /api/gateway/completions=403 ('API key is missing required scope: chat:write'), prompt injection via playground=blocked (httpStatus=403, riskScore=0.985), PII (email+card) redacted, and rate-limit key capacity 2 returns the 3rd request with 429 + Retry-After=36, X-RateLimit-Limit=2, X-RateLimit-Remaining=0. /metrics is only reachable at http://localhost:8001/metrics (returns Prometheus text as expected); the public ingress routes /metrics to the frontend as documented. YAML parsed clean for all 11 /app/k8s/*.yaml, /app/docker/docker-compose.yml, /app/monitoring/prometheus/{prometheus,alerts}.yml, /app/monitoring/grafana/provisioning/**.yml and JSON for /app/monitoring/grafana/dashboards/tollgate-overview.json.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "ratelimit.hit (MongoDB rate_limits)", "issue": "Rate-limit buckets persist in Mongo for up to 2*WINDOW_SECONDS=120s. If the previous Phase 4 run ends mid-flight (or is cancelled), the next pytest invocation inherits those counters and tests test_rate_limit_is_per_key, test_workspace_global_rate_limit and the test_gateway cases that share workspace/IP buckets flake with 429 instead of their expected 401/403. First run of this iteration failed exactly this way (5 failed, 10 errored, all 429). After `db.rate_limits.deleteMany({})` the full suite passed 86/86. Recommend either (a) a session-scoped autouse fixture that clears db.rate_limits for pytest buckets, or (b) namespacing non-API buckets with a `test:` prefix and clearing by regex on session start."}
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/tests/test_auth.py",
+    "/app/tests/test_bola_bfla.py",
+    "/app/tests/test_gateway.py",
+    "/app/tests/test_health.py",
+    "/app/tests/test_rate_limit.py",
+    "/app/test_reports/pytest/junit.xml"
+  ],
+  "action_items": [
+    "Optional: harden pytest against stale Mongo rate_limits by clearing the collection in conftest.py session setup (prevents the 429-cascade flake observed on first run)."
+  ],
+  "critical_code_review_comments": [
+    "ratelimit.hit relies on Mongo-side TTL/expires_at to clean rate_limits, but TTL monitor only runs every 60s; combined with 2*WINDOW retention this is correct for production, but makes pytest nondeterministic across back-to-back runs. A test-only prefix (e.g. 'ws:test-*', 'ipkey:test-*') would be the clean fix.",
+    "ratelimit._retry_after returned 36s for a limit of 2 with 2 used in the first second of the window — that is correct math (sliding window asks the client to wait roughly limit*window/used to decay) but 36s with Retry-After may feel punitive for a 60s window; worth documenting.",
+    "/metrics is at app root (not /api) by design, which means it is NOT reachable through the preview/ingress (frontend swallows it). ServiceMonitor in k8s scrapes the backend Service directly so this is fine in prod, but it is a surprise locally; a comment near server.py `@app.get('/metrics')` would help."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (86/86)", "frontend": "not tested (backend-only run)"},
+  "test_credentials": "demo@tollgate.dev / Tollgate!Demo2026 (Owner) from /app/memory/test_credentials.md",
+  "seed_data_creation": "Pytest fixtures create ephemeral signup accounts (unique_email) + TEST_* keys per class. Live-check script created and deleted TEST_t1_metrics and TEST_t1_rl keys on the demo workspace.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "If pytest fails with cascading 429s on the first run, clear the Mongo rate_limits collection before retrying: `cd /app/backend && set -a && . .env && set +a && python -c \"import asyncio; from db import db; asyncio.run(db.rate_limits.delete_many({}))\"`. Do NOT modify pytest.ini addopts. /metrics must be scraped at http://localhost:8001/metrics (public URL routes it to the frontend). Upstream LLM is intentionally a placeholder.",
+  "rca of the issue": "First pytest run reported 5 failed + 10 errors with every failure asserting 429 vs the expected 401/403. Root cause: /app/backend/ratelimit.py persists sliding-window counters in db.rate_limits with retention = 2 * WINDOW_SECONDS (120s). The previous testing agent iteration left documents keyed by workspace/IP buckets, so new signups in this run inherited an already-exhausted workspace budget on their very first /api/playground/evaluate or /api/gateway/completions call. Reproduction: run pytest twice back-to-back within 60s. Mitigation: `db.rate_limits.deleteMany({})` between runs; permanent fix is adding a conftest.py session-scoped fixture that purges `db.rate_limits` (or test-only bucket prefixes) before yielding the client."
+}

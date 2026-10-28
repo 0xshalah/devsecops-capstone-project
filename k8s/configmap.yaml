@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tollgate-backend-config
+  namespace: tollgate
+  labels:
+    app.kubernetes.io/name: tollgate-backend
+    app.kubernetes.io/part-of: tollgate
+data:
+  DB_NAME: tollgate
+  CORS_ORIGINS: https://tollgate.example.com
+  JWT_EXPIRE_MINUTES: "60"
+  RATE_LIMIT_IP_PER_MINUTE: "300"
+  REACT_APP_BACKEND_URL: https://tollgate.example.com
+  LLM_TIMEOUT_SECONDS: "30"
+  DEMO_EMAIL: demo@tollgate.dev
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tollgate-frontend-config
+  namespace: tollgate
+  labels:
+    app.kubernetes.io/name: tollgate-frontend
+    app.kubernetes.io/part-of: tollgate
+data:
+  BACKEND_UPSTREAM: http://tollgate-backend:8001

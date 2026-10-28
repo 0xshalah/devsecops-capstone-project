@@ -1,0 +1,62 @@
+{
+  "uid": "tollgate-overview",
+  "title": "Tollgate AI Security Gateway",
+  "tags": ["tollgate", "devsecops"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "30s",
+  "time": {"from": "now-6h", "to": "now"},
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Requests / s",
+      "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "sum(rate(tollgate_http_requests_total[5m]))"}]
+    },
+    {
+      "id": 2, "type": "stat", "title": "5xx error ratio",
+      "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "percentunit"}},
+      "targets": [{"refId": "A", "expr": "sum(rate(tollgate_http_requests_total{status=~\"5..\"}[5m])) / clamp_min(sum(rate(tollgate_http_requests_total[5m])), 1e-9)"}]
+    },
+    {
+      "id": 3, "type": "stat", "title": "p95 latency",
+      "gridPos": {"x": 12, "y": 0, "w": 6, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "s"}},
+      "targets": [{"refId": "A", "expr": "histogram_quantile(0.95, sum by (le) (rate(tollgate_http_request_duration_seconds_bucket[5m])))"}]
+    },
+    {
+      "id": 4, "type": "stat", "title": "Rate limited (5m)",
+      "gridPos": {"x": 18, "y": 0, "w": 6, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "sum(increase(tollgate_rate_limited_total[5m]))"}]
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Gateway evaluations by outcome",
+      "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "sum by (status) (rate(tollgate_gateway_evaluations_total[5m]))", "legendFormat": "{{status}}"}]
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Guardrail threats by type",
+      "gridPos": {"x": 12, "y": 4, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "sum by (type, severity) (rate(tollgate_guardrail_threats_total[5m]))", "legendFormat": "{{type}} / {{severity}}"}]
+    },
+    {
+      "id": 7, "type": "timeseries", "title": "HTTP status codes",
+      "gridPos": {"x": 0, "y": 12, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "sum by (status) (rate(tollgate_http_requests_total[5m]))", "legendFormat": "{{status}}"}]
+    },
+    {
+      "id": 8, "type": "timeseries", "title": "Latency by route (p95)",
+      "gridPos": {"x": 12, "y": 12, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "s"}},
+      "targets": [{"refId": "A", "expr": "histogram_quantile(0.95, sum by (le, route) (rate(tollgate_http_request_duration_seconds_bucket[5m])))", "legendFormat": "{{route}}"}]
+    }
+  ]
+}

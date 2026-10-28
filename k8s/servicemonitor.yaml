@@ -1,0 +1,21 @@
+# Optional: requires the Prometheus Operator (kube-prometheus-stack) CRDs. Not part of kustomization.yaml.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: tollgate-backend
+  namespace: tollgate
+  labels:
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tollgate-backend
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      authorization:
+        type: Bearer
+        credentials:
+          name: tollgate-backend-secrets
+          key: METRICS_TOKEN

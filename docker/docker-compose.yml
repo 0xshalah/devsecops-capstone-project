@@ -1,0 +1,123 @@
+# Local / staging stack.
+#   cp docker/.env.example docker/.env   (edit secrets)
+#   docker compose -f docker/docker-compose.yml --env-file docker/.env up -d --build
+#   docker compose -f docker/docker-compose.yml --env-file docker/.env --profile monitoring up -d
+name: tollgate
+
+x-hardening: &hardening
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  restart: unless-stopped
+
+services:
+  mongo:
+    image: mongo:7.0
+    <<: *hardening
+    cap_add: [CHOWN, SETUID, SETGID, DAC_OVERRIDE]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:?set in docker/.env}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?set in docker/.env}
+    volumes:
+      - mongo-data:/data/db
+    networks: [data]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/backend.Dockerfile
+    image: tollgate/backend:local
+    <<: *hardening
+    read_only: true
+    tmpfs: [/tmp]
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      MONGO_URL: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongo:27017/?authSource=admin
+      DB_NAME: ${DB_NAME:?set in docker/.env}
+      JWT_SECRET: ${JWT_SECRET:?set in docker/.env}
+      JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-60}
+      API_KEY_HMAC_SECRET: ${API_KEY_HMAC_SECRET:?set in docker/.env}
+      CORS_ORIGINS: ${CORS_ORIGINS:?set in docker/.env}
+      RATE_LIMIT_IP_PER_MINUTE: ${RATE_LIMIT_IP_PER_MINUTE:-300}
+      METRICS_TOKEN: ${METRICS_TOKEN:-}
+      DEMO_EMAIL: ${DEMO_EMAIL:?set in docker/.env}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:?set in docker/.env}
+      REACT_APP_BACKEND_URL: ${REACT_APP_BACKEND_URL:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-}
+      LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-30}
+    networks: [data, web]
+    expose: ["8001"]
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/frontend.Dockerfile
+      args:
+        REACT_APP_BACKEND_URL: ${REACT_APP_BACKEND_URL:-}
+    image: tollgate/frontend:local
+    <<: *hardening
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /etc/nginx/conf.d:uid=101,gid=101
+    depends_on: [backend]
+    environment:
+      BACKEND_UPSTREAM: http://backend:8001
+    ports:
+      - "${FRONTEND_PORT:-8080}:8080"
+    networks: [web]
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    profiles: [monitoring]
+    <<: *hardening
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --web.enable-lifecycle
+    volumes:
+      - ../monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    networks: [web]
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    profiles: [monitoring]
+    <<: *hardening
+    depends_on: [prometheus]
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set in docker/.env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    volumes:
+      - ../monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3001:3000"
+    networks: [web]
+
+networks:
+  web: {}
+  data:
+    internal: true
+
+volumes:
+  mongo-data: {}
+  prometheus-data: {}
+  grafana-data: {}
