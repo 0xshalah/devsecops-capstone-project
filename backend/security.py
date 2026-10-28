@@ -131,7 +131,7 @@ def verify_api_key_scope(required_scope: str):
             {"id": key["id"], "workspace_id": key["workspace_id"]},
             {"$set": {"last_used_at": datetime.now(timezone.utc)}},
         )
-        return ApiKeyContext(key_id=key["id"], workspace_id=key["workspace_id"], user_id=key["user_id"],
+        return ApiKeyContext(key_id=key["id"], workspace_id=key["workspace_id"], user_id=key["user_id"], key_name=key["name"],
                              scopes=key["scopes"], rate_limit=key["rate_limit"])
 
     return scope_checker

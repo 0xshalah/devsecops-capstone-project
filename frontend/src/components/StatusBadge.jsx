@@ -18,7 +18,7 @@ export const useHealth = () => {
     if (!API) { setStatus("down"); return undefined; }
     const ctrl = new AbortController();
     fetch(`${API}/api/health`, { signal: ctrl.signal })
-      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then(async (r) => { const d = await r.json().catch(() => null); if (!d) throw new Error(String(r.status)); return d; })
       .then((d) => { setData(d); setStatus(d?.status === "operational" ? "operational" : "degraded"); })
       .catch((e) => { if (e?.name !== "AbortError") setStatus("down"); });
     return () => ctrl.abort();

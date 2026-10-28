@@ -97,6 +97,16 @@ export const Switch = ({ checked, onChange, testId, label }) => (
 
 export const Skeleton = ({ className = "" }) => <div className={`animate-pulse rounded-[3px] bg-zinc-800/60 ${className}`} />;
 
+export const SettingRow = ({ title, hint, children }) => (
+  <div className="flex flex-col gap-3 border-b border-[var(--line)] px-4 py-4 last:border-0 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <p className="text-[13px] text-zinc-200">{title}</p>
+      {hint && <p className="mt-0.5 text-xs text-zinc-500">{hint}</p>}
+    </div>
+    <div className="flex shrink-0 items-center gap-2">{children}</div>
+  </div>
+);
+
 export const Th = ({ children, className = "" }) => (
   <th className={`h-9 whitespace-nowrap px-4 text-left font-mono text-[11px] font-normal uppercase tracking-wider text-zinc-500 ${className}`}>{children}</th>
 );

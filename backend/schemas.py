@@ -41,6 +41,7 @@ class ApiKeyContext(BaseModel):
     key_id: str
     workspace_id: str
     user_id: str
+    key_name: str
     scopes: List[Scope]
     rate_limit: int
 
@@ -311,6 +312,23 @@ class SecurityLogResponseSchema(Output):
     latency: int
     tokens: int
 
+    @classmethod
+    def from_db(cls, doc: dict) -> "SecurityLogResponseSchema":
+        log = SecurityLogInDB(**doc)
+        return cls(id=log.id, ts=log.timestamp, endpoint=log.endpoint, model=log.model, key=log.key_name,
+                   keyId=log.key_id, status=log.http_status, outcome=log.status, severity=log.severity,
+                   action=log.action, threatType=log.threat_type, rule=log.rule, promptSnippet=log.prompt_snippet,
+                   latency=log.latency_ms, tokens=log.tokens)
+
+
+class LogListResponse(Output):
+    items: List[SecurityLogResponseSchema]
+    total: int
+    limit: int
+    offset: int
+    page: int
+    pages: int
+
 
 # ---------- Metrics ----------
 class GatewayMetricsInDB(DBModel):
@@ -324,18 +342,32 @@ class GatewayMetricsInDB(DBModel):
     avg_latency_ms: int
 
 
+MetricsWindow = Literal["1h", "24h", "7d", "30d"]
+Granularity = Literal["hour", "day"]
+
+
+class RuleCount(Output):
+    rule: str
+    count: int
+
+
 class MetricsOverviewResponse(Output):
+    window: MetricsWindow
     totalRequests: int
     blockedCount: int
     blockedPct: float
+    flaggedCount: int
+    cleanCount: int
     avgLatencyMs: int
     activeKeys: int
     tokenVolume: int
+    topRules: List[RuleCount]
 
 
 class TrafficBucketResponse(Output):
     t: datetime
     requests: int
+    clean: int
     blocks: int
     flagged: int
     latency: int
@@ -360,12 +392,21 @@ class GatewaySettingsInDB(DBModel):
     toxicity_filter: bool = True
     global_rate_limit: int = Field(3000, ge=1, le=1_000_000)
     updated_at: datetime
+    updated_by: Optional[str] = None
+
+
+class PiiTogglesUpdate(StrictInput):
+    email: Optional[bool] = None
+    phone: Optional[bool] = None
+    creditCard: Optional[bool] = None
+    nationalId: Optional[bool] = None
+    secrets: Optional[bool] = None
 
 
 class GatewaySettingsUpdate(StrictInput):
     defaultAction: Optional[Action] = None
-    injectionThreshold: Optional[float] = Field(None, ge=0.0, le=1.0)
-    piiRedaction: Optional[PiiToggles] = None
+    injectionThreshold: Optional[float] = Field(None, ge=0.05, le=1.0)
+    piiRedaction: Optional[PiiTogglesUpdate] = None
     toxicityFilter: Optional[bool] = None
     globalRateLimit: Optional[int] = Field(None, ge=1, le=1_000_000)
 
@@ -378,3 +419,11 @@ class GatewaySettingsResponse(Output):
     toxicityFilter: bool
     globalRateLimit: int
     updatedAt: datetime
+    updatedBy: Optional[str] = None
+
+    @classmethod
+    def from_db(cls, doc: dict) -> "GatewaySettingsResponse":
+        s = GatewaySettingsInDB(**doc)
+        return cls(workspaceId=s.workspace_id, defaultAction=s.default_action, injectionThreshold=s.injection_threshold,
+                   piiRedaction=s.pii_redaction, toxicityFilter=s.toxicity_filter, globalRateLimit=s.global_rate_limit,
+                   updatedAt=s.updated_at, updatedBy=s.updated_by)

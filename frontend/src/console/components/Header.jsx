@@ -29,9 +29,6 @@ export const Header = () => {
         <span className="flex-1 truncate">{t("console.search")}</span>
         <Kbd>{MOD} K</Kbd>
       </button>
-      <span data-testid="sample-data-badge" title="Values come from the local mock client until the FastAPI endpoints are connected" className="hidden whitespace-nowrap font-mono text-[11px] text-zinc-500 lg:inline">
-        {t("console.sample")}
-      </span>
       <EnvBadge env={env} testId="header-env-badge" />
       <span aria-hidden className="h-5 w-px bg-[var(--line)]" />
       <AccountMenu />

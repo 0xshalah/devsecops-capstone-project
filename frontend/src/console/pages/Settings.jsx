@@ -6,17 +6,8 @@ import { LANGS } from "@/i18n/dictionary";
 import { useConsole } from "../ConsoleContext";
 import { GATEWAY_BASE_URL } from "../nav";
 import { MOD } from "../lib/format";
-import { Kbd, PageHeader, Panel, Segmented, Switch, btnGhost, btnSecondary, copyText } from "../components/ui";
-
-const Row = ({ title, hint, children }) => (
-  <div className="flex flex-col gap-3 border-b border-[var(--line)] px-4 py-4 last:border-0 sm:flex-row sm:items-center sm:justify-between">
-    <div>
-      <p className="text-[13px] text-zinc-200">{title}</p>
-      {hint && <p className="mt-0.5 text-xs text-zinc-500">{hint}</p>}
-    </div>
-    <div className="flex shrink-0 items-center gap-2">{children}</div>
-  </div>
-);
+import { Kbd, PageHeader, Panel, Segmented, SettingRow as Row, Switch, btnGhost, btnSecondary, copyText } from "../components/ui";
+import { GuardrailPolicy } from "../components/GuardrailPolicy";
 
 const Appearance = () => {
   const { theme, setTheme, t } = usePrefs();
@@ -107,6 +98,7 @@ export default function Settings() {
         <Appearance />
         <Localization />
         <AccountSecurity />
+        <GuardrailPolicy />
         <Gateway />
         <Shortcuts />
       </div>

@@ -1,12 +1,5 @@
-// Keys and playground use the FastAPI backend. Overview and logs stay on seeded mock data until Phase 3.
+// Every console view reads from the FastAPI backend.
 import { apiRequest } from "@/lib/apiClient";
-import { seedLogs, seedTraffic } from "./mockData";
-
-const now = Date.now();
-const db = { logs: seedLogs(now), traffic: seedTraffic(now) };
-
-const wait = (min = 120, max = 320) => new Promise((r) => setTimeout(r, min + Math.random() * (max - min)));
-const clone = (v) => JSON.parse(JSON.stringify(v));
 
 const toKey = (k) => ({
   ...k,
@@ -15,24 +8,14 @@ const toKey = (k) => ({
   lastUsed: k.lastUsed ? Date.parse(k.lastUsed) : null,
 });
 
+const toLog = (l) => ({ ...l, ts: Date.parse(l.ts) });
+const toBucket = (b) => ({ ...b, t: Date.parse(b.t) });
+
+const qs = (params) => new URLSearchParams(
+  Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== "" && v !== "all"),
+).toString();
+
 const GUARDRAIL = { blocked: "BLOCKED", redacted: "REDACTED", allowed: "PASSED" };
-
-const summarize = () => {
-  const t = db.traffic;
-  const total = t.reduce((s, d) => s + d.requests, 0);
-  return {
-    totalRequests: total,
-    tokenVolume: t.reduce((s, d) => s + d.tokens, 0),
-    avgLatency: Math.round(t.reduce((s, d) => s + d.latency * d.requests, 0) / total),
-    guardrailBlocks: t.reduce((s, d) => s + d.blocks, 0),
-  };
-};
-
-const topRules = () => {
-  const counts = {};
-  db.logs.filter((l) => l.status === 403).forEach((l) => { counts[l.rule] = (counts[l.rule] || 0) + 1; });
-  return Object.entries(counts).map(([rule, count]) => ({ rule, count })).sort((a, b) => b.count - a.count);
-};
 
 export const gatewayApi = {
   async listKeys(env) {
@@ -58,13 +41,33 @@ export const gatewayApi = {
   },
 
   async getOverview() {
-    await wait();
-    return clone({ metrics: summarize(), traffic: db.traffic, recent: db.logs.slice(0, 8), topRules: topRules() });
+    const [m, traffic, recent] = await Promise.all([
+      apiRequest("/metrics/overview?window=24h"),
+      apiRequest("/metrics/traffic?granularity=hour&buckets=24"),
+      apiRequest("/logs?limit=8"),
+    ]);
+    return {
+      metrics: {
+        totalRequests: m.totalRequests, tokenVolume: m.tokenVolume, avgLatency: m.avgLatencyMs,
+        guardrailBlocks: m.blockedCount, blockedPct: m.blockedPct, flagged: m.flaggedCount, activeKeys: m.activeKeys,
+      },
+      traffic: traffic.map(toBucket),
+      recent: recent.items.map(toLog),
+      topRules: m.topRules,
+    };
   },
 
-  async listLogs() {
-    await wait();
-    return clone(db.logs);
+  async listLogs({ q, status, severity, page, limit } = {}) {
+    const res = await apiRequest(`/logs?${qs({ q, status, severity, page, limit })}`);
+    return { ...res, items: res.items.map(toLog) };
+  },
+
+  getSettings() {
+    return apiRequest("/settings");
+  },
+
+  updateSettings(body) {
+    return apiRequest("/settings", { method: "PUT", body });
   },
 
   async sendChat({ model, system, prompt, strict }) {

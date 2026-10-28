@@ -60,10 +60,10 @@ const Metrics = ({ m }) => {
   const { t } = usePrefs();
   return (
   <div className="grid grid-cols-1 gap-px overflow-hidden rounded-md border border-[var(--line)] bg-[var(--line)] sm:grid-cols-2 xl:grid-cols-4">
-    <Metric testId="metric-total-requests" label={t("console.overview.total")} value={fmtInt(m.totalRequests)} sub="all endpoints" />
+    <Metric testId="metric-total-requests" label={t("console.overview.total")} value={fmtInt(m.totalRequests)} sub={`${fmtInt(m.activeKeys)} active keys`} />
     <Metric testId="metric-token-volume" label={t("console.overview.tokens")} value={fmtCompact(m.tokenVolume)} sub={`${fmtInt(m.tokenVolume)} tokens`} />
     <Metric testId="metric-avg-latency" label={t("console.overview.latency")} value={`${m.avgLatency} ms`} sub="request weighted" />
-    <Metric testId="metric-guardrail-blocks" label={t("console.overview.blocks")} value={fmtInt(m.guardrailBlocks)} sub="403 Forbidden" tone="text-rose-400" />
+    <Metric testId="metric-guardrail-blocks" label={t("console.overview.blocks")} value={fmtInt(m.guardrailBlocks)} sub={`${m.blockedPct}% blocked, ${fmtInt(m.flagged)} flagged`} tone="text-rose-400" />
   </div>
   );
 };
@@ -86,6 +86,7 @@ const RecentTable = ({ rows }) => {
               <Td className="tnum text-right font-mono text-zinc-300">{fmtInt(r.tokens)}</Td>
             </tr>
           ))}
+          {rows.length === 0 && <tr><td colSpan={6} data-testid="recent-requests-empty" className="px-4 py-8 text-center text-sm text-zinc-500">{t("console.overview.noRequests")}</td></tr>}
         </tbody>
       </table>
     </div>
@@ -99,6 +100,7 @@ const TopRules = ({ rules }) => {
   return (
     <Panel title={t("console.overview.rules")} testId="top-rules-panel">
       <ul className="space-y-4 p-4">
+        {rules.length === 0 && <li data-testid="top-rules-empty" className="py-6 text-center text-xs text-zinc-500">{t("console.overview.noBlocks")}</li>}
         {rules.map((r) => (
           <li key={r.rule} data-testid="top-rule-row">
             <div className="flex items-baseline justify-between gap-3 text-xs">

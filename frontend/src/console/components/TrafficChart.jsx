@@ -8,18 +8,27 @@ const PALETTE = {
   dark: { tick: "#71717a", grid: "#1c1c20", bar: "#3a3a40", cursor: "#ffffff08", dotStroke: "#09090b" },
   light: { tick: "#64748b", grid: "#e4e4e7", bar: "#cbd5e1", cursor: "#0f172a0a", dotStroke: "#ffffff" },
 };
+const FLAGGED = "#f59e0b";
+const BLOCKED = "#ff5500";
 
-
-const ChartTip = ({ active, payload, unit }) => {
+const ChartTip = ({ active, payload }) => {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   return (
     <div className="rounded-[4px] border border-[var(--line-strong)] bg-[var(--surface)] px-2.5 py-1.5 font-mono text-[11px] tnum">
       <p className="text-zinc-500">{d.label} UTC</p>
-      <p className="text-zinc-100">{fmtInt(payload[0].value)} {unit}</p>
+      {payload.map((p) => <p key={p.dataKey} className="text-zinc-100"><span style={{ color: p.color }}>&#9632;</span> {fmtInt(p.value)} {p.name}</p>)}
     </div>
   );
 };
+
+const Legend = ({ bar }) => (
+  <div data-testid="traffic-chart-legend" className="flex gap-4 px-4 pb-3 font-mono text-[11px] text-zinc-500">
+    {[["clean", bar], ["flagged", FLAGGED], ["blocked", BLOCKED]].map(([name, color]) => (
+      <span key={name} className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-[2px]" style={{ background: color }} />{name}</span>
+    ))}
+  </div>
+);
 
 export const TrafficChart = ({ data }) => {
   const [mode, setMode] = useState("requests");
@@ -37,25 +46,28 @@ export const TrafficChart = ({ data }) => {
       testId="traffic-chart-panel"
       action={<Segmented label="Chart series" testId="traffic-chart-mode" value={mode} onChange={setMode} options={[{ value: "requests", label: "Requests" }, { value: "latency", label: "Latency" }]} />}
     >
-      <div className="h-[248px] px-2 pb-3 pt-4" data-testid="traffic-chart">
+      <div className="h-[220px] px-2 pb-2 pt-4" data-testid="traffic-chart">
         <ResponsiveContainer width="100%" height="100%">
           {mode === "requests" ? (
             <BarChart {...common} barCategoryGap={3}>
               {grid}{x}
-              <YAxis {...axis} width={44} tickFormatter={fmtCompact} />
-              <Tooltip cursor={{ fill: c.cursor }} content={<ChartTip unit="requests" />} />
-              <Bar dataKey="requests" fill={c.bar} activeBar={{ fill: "#ff5500" }} isAnimationActive={false} />
+              <YAxis {...axis} width={44} tickFormatter={fmtCompact} allowDecimals={false} />
+              <Tooltip cursor={{ fill: c.cursor }} content={<ChartTip />} />
+              <Bar dataKey="clean" name="clean" stackId="t" fill={c.bar} isAnimationActive={false} />
+              <Bar dataKey="flagged" name="flagged" stackId="t" fill={FLAGGED} isAnimationActive={false} />
+              <Bar dataKey="blocks" name="blocked" stackId="t" fill={BLOCKED} isAnimationActive={false} />
             </BarChart>
           ) : (
             <LineChart {...common}>
               {grid}{x}
-              <YAxis {...axis} width={44} tickFormatter={(v) => `${v}ms`} domain={["dataMin - 5", "dataMax + 5"]} />
-              <Tooltip cursor={{ stroke: c.bar }} content={<ChartTip unit="ms avg" />} />
-              <Line type="monotone" dataKey="latency" stroke="#ff5500" strokeWidth={1.5} dot={false} activeDot={{ r: 3, fill: "#ff5500", stroke: c.dotStroke }} isAnimationActive={false} />
+              <YAxis {...axis} width={44} tickFormatter={(v) => `${v}ms`} />
+              <Tooltip cursor={{ stroke: c.bar }} content={<ChartTip />} />
+              <Line type="monotone" dataKey="latency" name="ms avg" stroke={BLOCKED} strokeWidth={1.5} dot={false} activeDot={{ r: 3, fill: BLOCKED, stroke: c.dotStroke }} isAnimationActive={false} />
             </LineChart>
           )}
         </ResponsiveContainer>
       </div>
+      {mode === "requests" ? <Legend bar={c.bar} /> : <div className="h-[29px]" />}
     </Panel>
   );
 };

@@ -17,7 +17,7 @@ const useAsync = (fn, deps) => {
 
 export const useOverview = () => useAsync(() => gatewayApi.getOverview(), []);
 
-export const useLogs = () => useAsync(() => gatewayApi.listLogs(), []);
+export const useLogs = (params) => useAsync(() => gatewayApi.listLogs(params), [JSON.stringify(params)]);
 
 export const useKeys = (env, version) => {
   const q = useAsync(() => gatewayApi.listKeys(env), [env, version]);
