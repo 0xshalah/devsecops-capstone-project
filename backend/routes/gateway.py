@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
 from db import db
+from guardrails import upstream
 from guardrails.engine import Evaluation, estimate_tokens, run
 from ids import new_id
 from schemas import (ApiKeyContext, CurrentUser, EvaluationResponse, GatewayCompletionRequest, GatewaySettingsInDB,
@@ -30,7 +31,7 @@ def _response(ev: Evaluation, latency: int, model: str, prompt_text: str) -> Eva
         flagged=ev.flagged, riskScore=ev.risk_score,
         detectedThreats=[ThreatSchema(**f.dict()) for f in ev.threats],
         outputThreats=[ThreatSchema(**f.dict()) for f in ev.output_threats],
-        redactedPrompt=ev.redacted_texts[-1], response=ev.response, latencyMs=latency,
+        redactedPrompt=ev.redacted_texts[-1], response=ev.response, upstream=upstream.provider_name(), latencyMs=latency,
         tokens=TokenUsage(prompt=prompt_tokens, completion=completion_tokens, total=prompt_tokens + completion_tokens),
     )
 
@@ -39,7 +40,7 @@ def _response(ev: Evaluation, latency: int, model: str, prompt_text: str) -> Eva
 async def playground_evaluate(body: PlaygroundEvaluateRequest, user: CurrentUser = Depends(require_roles(CONSOLE_ROLES))):
     settings = await load_settings(user.workspace_id)
     texts = [body.system, body.prompt]
-    ev, latency = run(texts, body.model, settings, monitor=not body.strict)
+    ev, latency = await run(texts, ["system", "user"], body.model, settings, monitor=not body.strict)
     return _response(ev, latency, body.model, " ".join(texts))
 
 
@@ -47,6 +48,6 @@ async def playground_evaluate(body: PlaygroundEvaluateRequest, user: CurrentUser
 async def gateway_completions(body: GatewayCompletionRequest, key: ApiKeyContext = Depends(verify_api_key_scope("chat:write"))):
     settings = await load_settings(key.workspace_id)
     texts = [m.content for m in body.messages]
-    ev, latency = run(texts, body.model, settings, monitor=False)
+    ev, latency = await run(texts, [m.role for m in body.messages], body.model, settings, monitor=False)
     result = _response(ev, latency, body.model, " ".join(texts))
     return JSONResponse(status_code=result.httpStatus, content=result.model_dump(mode="json"))

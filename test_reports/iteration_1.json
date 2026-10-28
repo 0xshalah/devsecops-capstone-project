@@ -1,0 +1,24 @@
+{
+  "summary": "Phase 2 end-to-end testing complete. 28/28 backend tests pass covering API Key CRUD lifecycle, RBAC (BFLA Viewer), BOLA cross-tenant isolation, BOPLA strict schemas, HMAC-only Mongo persistence, rotate invalidation, scope enforcement, revoked key 401, JWT<->api-key confusion, and all guardrail paths (injection with base64 payload, PII with email/phone/card/SSN/NIK/secret tokens, toxicity, strict vs monitor). Playground returns PLACEHOLDER upstream when LLM_* env vars are blank, as requested. Frontend UI flow verified: sign-in -> /console/keys create secret dialog shows one-time sk-gw-* secret, key renders in table, revoke then delete removes it, and /console/playground returns PASSED/BLOCKED/REDACTED with full JSON response body.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_phase2_keys_gateway.py",
+    "/app/test_reports/pytest/phase2.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "security.verify_api_key_scope performs a secrets.compare_digest check against the same digest it just queried by, which is a no-op (constant-time check on identical values). The HMAC lookup is deterministic so this adds no value; harmless but misleading.",
+    "/app/backend/tests/test_phase1_auth.py has a hardcoded ALLOWED_ORIGIN pointing to an old preview URL (devsecops-capstone--1tvkdwfj.preview.emergentagent.com); because CORS_ORIGINS='*' this currently passes, but if the wildcard is tightened the test will break. Suggest reading from env.",
+    "frontend/src/console/services/gatewayApi.js still imports seedLogs/seedTraffic for Overview/Logs mock data (Phase 3 scope, acknowledged)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_phase2_keys_gateway.py"
+  ],
+  "success_rate": {"backend": "100% (28/28)", "frontend": "100% (all critical flows pass)"},
+  "test_credentials": "Demo Owner demo@tollgate.dev / TollgateDemo!2026",
+  "seed_data_creation": "Tests create ephemeral users via /api/auth/signup (test+phase2_* emails) and TEST_* prefixed API keys. Revoked keys are soft-deleted at test end where applicable; residual revoked keys remain for audit as per design.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Phase 2 is green. Upstream LLM is intentionally PLACEHOLDER (upstream.py returns a [PLACEHOLDER] string when LLM_BASE_URL/LLM_API_KEY/LLM_MODEL are empty). Overview/SecurityLogs pages still consume mockData until Phase 3. test_phase2_keys_gateway.py is parallel-safe (uses pytest-xdist LoadScope) and runs in ~5s. The gateway accepts both X-API-Key header and Bearer sk-gw-* on Authorization."
+}

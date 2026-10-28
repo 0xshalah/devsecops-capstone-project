@@ -268,6 +268,7 @@ class EvaluationResponse(Output):
     outputThreats: List[ThreatSchema]
     redactedPrompt: str
     response: Optional[str]
+    upstream: str
     latencyMs: int
     tokens: TokenUsage
 

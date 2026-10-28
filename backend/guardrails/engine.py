@@ -3,7 +3,10 @@ import time
 from dataclasses import dataclass, field
 from typing import Optional
 
-from guardrails import injection, pii, toxicity
+import httpx
+from fastapi import HTTPException
+
+from guardrails import injection, pii, toxicity, upstream
 from guardrails.common import Finding
 
 WITHHELD = "[RESPONSE_WITHHELD: output violated content policy]"
@@ -65,16 +68,15 @@ def inspect_output(text: str, settings: dict, action: str) -> tuple[str, list[Fi
     return redacted, tox + found
 
 
-def simulate_completion(model: str, prompt_tokens: int) -> str:
-    # MOCKED upstream: no LLM provider is connected yet.
-    return (f"Simulated completion from {model}. Your request passed gateway inspection "
-            f"({prompt_tokens} prompt tokens). Upstream model providers are not connected yet.")
-
-
-def run(texts: list[str], model: str, settings: dict, monitor: bool) -> tuple[Evaluation, int]:
+async def run(texts: list[str], roles: list[str], model: str, settings: dict, monitor: bool) -> tuple[Evaluation, int]:
     started = time.perf_counter()
     ev = inspect_input(texts, settings, monitor)
     if ev.status != "blocked":
-        raw = simulate_completion(model, estimate_tokens(" ".join(ev.redacted_texts)))
+        # Only the redacted prompt ever leaves the gateway.
+        messages = [{"role": r, "content": t} for r, t in zip(roles, ev.redacted_texts) if t]
+        try:
+            raw = await upstream.complete(messages, model)
+        except (httpx.HTTPError, KeyError, IndexError, ValueError):
+            raise HTTPException(status_code=502, detail="Upstream model provider failed")
         ev.response, ev.output_threats = inspect_output(raw, settings, ev.action)
     return ev, max(1, round((time.perf_counter() - started) * 1000))

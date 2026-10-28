@@ -25,7 +25,9 @@ Phase 4: Account menu and profile management. Header account dropdown (session i
 
 ## Backend & DevSecOps Plan (TASK.md)
 - 2026-10-28: Backend Phase 1 (P0) done and verified: DB init/indexes + seed (lifespan), strict Pydantic schemas, JWT auth (signup/signin/me/profile), lockout, get_current_user / verify_workspace_access / require_roles / verify_api_key_scope, CORS allowlist. Frontend AuthContext uses real API. Tests: backend/tests/test_phase1_auth.py (22/22), iteration_1.
-- Next: Phase 2 (API keys CRUD, guardrail engine, playground/gateway endpoints).
+- 2026-10-28: Backend Phase 2 (P1) done and verified: API key CRUD/rotate (HMAC hash + masked prefix, BOLA/BFLA-scoped), guardrail engine (prompt injection incl. base64, PII redaction, toxicity), POST /api/playground/evaluate (JWT) + POST /api/gateway/completions (X-API-Key, chat:write). Upstream LLM via OpenAI-compatible client (backend/guardrails/upstream.py) = PLACEHOLDER until LLM_BASE_URL/LLM_API_KEY/LLM_MODEL set. Tests: backend/tests/test_phase2_keys_gateway.py (28/28).
+- 2026-10-28: Upstream LLM connected: Griphub router (OpenAI-compatible, https://griphubrouter.web.id/v1, model deepseek-v4.1-flash). Playground/gateway now return real AI replies (upstream: openai-compatible).
+- Next: Phase 3 (security logs persistence + GET /api/logs, metrics, settings, health).
 
 ## MOCKED (updated: auth is now real; below still applies to console data)
 - Auth is client-side only: session in localStorage `tollgate.session`, accounts (name only) in `tollgate.accounts`, passwords not checked, Google sign-in simulated, profile updates and user/org IDs are local only (IDs derived from email hash), reset email not sent.
