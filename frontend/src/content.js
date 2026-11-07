@@ -4,6 +4,7 @@ export const LINKS = {
   console: "/console",
   consoleKeys: "/console/keys",
   contact: "/contact",
+  signup: "/auth/sign-up",
   security: "/security",
   health: "/health",
   github: "https://github.com/[your-org]/devsecops-capstone-project",
@@ -21,36 +22,11 @@ export const MARQUEE = [
   "Token accounting",
 ];
 
-export const TIERS = [
-  {
-    id: "developer-free",
-    name: "Developer",
-    price: "$0",
-    unit: "per month",
-    note: "For prototypes and side projects.",
-    items: ["[10] requests per second", "[24 hours] log retention", "Default guardrail set", "Community support"],
-    cta: "Create free key",
-    href: LINKS.console,
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    price: "$[X]",
-    unit: "per month",
-    note: "For teams shipping to production.",
-    items: ["[100] requests per second", "[30 days] log retention", "Custom guardrail rules", "Per-key budgets and alerts"],
-    cta: "Choose Pro",
-    href: LINKS.console,
-    featured: true,
-  },
-  {
-    id: "enterprise",
-    name: "Enterprise",
-    price: "Custom",
-    unit: "annual contract",
-    note: "For regulated workloads.",
-    items: ["Dedicated throughput", "[1 year] audit log retention", "Custom guardrails with policy review", "Private networking options"],
-    cta: "Talk to sales",
-    href: LINKS.contact,
-  },
+// Single source for plan prices and quotas. IDR is a fixed rounded price list, not a live FX conversion.
+// annual = price per month when billed yearly (about 20% off). null = contact sales.
+export const PLANS = [
+  { id: "free", quota: 10000, price: { usd: { monthly: 0, annual: 0 }, idr: { monthly: 0, annual: 0 } } },
+  { id: "pro", quota: 250000, price: { usd: { monthly: 49, annual: 39 }, idr: { monthly: 790000, annual: 629000 } } },
+  { id: "team", quota: 2000000, featured: true, price: { usd: { monthly: 199, annual: 159 }, idr: { monthly: 3190000, annual: 2549000 } } },
+  { id: "enterprise", quota: null, price: null },
 ];

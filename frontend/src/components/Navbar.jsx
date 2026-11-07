@@ -9,8 +9,10 @@ import { LINKS } from "@/content";
 
 const NAV = [
   { key: "features", id: "features", testId: "nav-features-link" },
-  { key: "docs", to: LINKS.docs, testId: "nav-docs-link" },
+  { key: "how", id: "how-it-works", testId: "nav-how-it-works-link" },
   { key: "pricing", id: "pricing", testId: "nav-pricing-link" },
+  { key: "faq", id: "faq", testId: "nav-faq-link" },
+  { key: "docs", to: LINKS.docs, testId: "nav-docs-link" },
 ];
 
 const NavItem = ({ item, onDone }) => {
@@ -23,7 +25,9 @@ const NavItem = ({ item, onDone }) => {
   const go = (e) => {
     e.preventDefault();
     onDone?.();
-    if (pathname !== "/") { navigate("/"); setTimeout(() => scrollToId(item.id), 120); } else scrollToId(item.id);
+    if (pathname !== "/") { navigate("/"); setTimeout(() => scrollToId(item.id), 120); }
+    else if (onDone) setTimeout(() => scrollToId(item.id), 60); // wait for the mobile menu to collapse
+    else scrollToId(item.id);
   };
   return <a href={`/#${item.id}`} data-testid={item.testId} className={cls} onClick={go}>{label}</a>;
 };

@@ -3,7 +3,7 @@ import { NAV, GATEWAY_BASE_URL } from "@/console/nav";
 const DESCRIPTIONS = {
   overview: "Request volume, latency and recent calls for the active environment.",
   keys: "Create, copy once, and revoke gateway keys with per-key quotas.",
-  playground: "Send test prompts to /v1/chat and inspect the guardrail verdict.",
+  playground: "Send test prompts to /v1/chat/completions and inspect the guardrail verdict.",
   logs: "Requests the guardrails blocked, with the rule that triggered.",
   settings: "Switch between live and test environments.",
 };

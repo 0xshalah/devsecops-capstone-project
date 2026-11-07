@@ -16,6 +16,8 @@ from security import require_roles, verify_api_key_scope
 router = APIRouter(tags=["gateway"])
 CONSOLE_ROLES = ["Owner", "Admin", "Member", "Viewer"]
 HTTP_STATUS = {"blocked": 403, "redacted": 200, "allowed": 200}
+AUTO_ROUTE = "nexus-fast-v1"  # "auto" resolves to the lowest-latency route
+COMPLETIONS_PATH = "/v1/chat/completions"
 
 
 async def load_settings(workspace_id: str, user_id: str) -> dict:
@@ -36,6 +38,7 @@ def _response(ev: Evaluation, latency: int, model: str, prompt_text: str) -> Eva
 
 
 async def _evaluate_and_log(texts, roles, model, settings, monitor, *, workspace_id, user_id, key_id, key_name, endpoint):
+    model = AUTO_ROUTE if model == "auto" else model
     await enforce(
         f"ws:{workspace_id}", settings["global_rate_limit"], scope="workspace", detail="Workspace rate limit exceeded",
         log={"workspace_id": workspace_id, "user_id": user_id, "key_id": key_id, "key_name": key_name,
@@ -60,12 +63,12 @@ async def playground_evaluate(body: PlaygroundEvaluateRequest, user: CurrentUser
     )
 
 
-@router.post("/gateway/completions", response_model=EvaluationResponse)
-async def gateway_completions(body: GatewayCompletionRequest, key: ApiKeyContext = Depends(verify_api_key_scope("chat:write"))):
+@router.post(COMPLETIONS_PATH, response_model=EvaluationResponse)
+async def chat_completions(body: GatewayCompletionRequest, key: ApiKeyContext = Depends(verify_api_key_scope("chat:write"))):
     settings = await load_settings(key.workspace_id, key.user_id)
     result = await _evaluate_and_log(
         [m.content for m in body.messages], [m.role for m in body.messages], body.model, settings, False,
         workspace_id=key.workspace_id, user_id=key.user_id, key_id=key.key_id, key_name=key.key_name,
-        endpoint="/api/gateway/completions",
+        endpoint=COMPLETIONS_PATH,
     )
     return JSONResponse(status_code=result.httpStatus, content=result.model_dump(mode="json"))

@@ -1,0 +1,5 @@
+-----BEGIN PUBLIC KEY-----
+REPLACE_WITH_YOUR_COSIGN_PUBLIC_KEY
+Generate it with: cosign generate-key-pair   (see docs/supply-chain-signing.md)
+The Verify Signatures stage refuses to deploy while this placeholder is present.
+-----END PUBLIC KEY-----

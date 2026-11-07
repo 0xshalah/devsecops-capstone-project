@@ -222,11 +222,11 @@ class ApiKeyCreatedResponse(Output):
 
 
 # ---------- Gateway / Playground ----------
-ModelId = Literal["nexus-fast-v1", "gpt-4o-route", "claude-route"]
+ModelId = Literal["auto", "nexus-fast-v1", "gpt-4o-route", "claude-route"]
 
 
 class PlaygroundEvaluateRequest(StrictInput):
-    model: ModelId = "nexus-fast-v1"
+    model: ModelId = "auto"
     system: str = Field("", max_length=8000)
     prompt: str = Field(min_length=1, max_length=16000)
     strict: bool = True
@@ -238,7 +238,7 @@ class ChatMessage(StrictInput):
 
 
 class GatewayCompletionRequest(StrictInput):
-    model: ModelId = "nexus-fast-v1"
+    model: ModelId = "auto"
     messages: List[ChatMessage] = Field(min_length=1, max_length=50)
 
 

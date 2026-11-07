@@ -17,7 +17,7 @@ DEMO_KEYS = [
     ("staging-worker", "test", ["chat:write"], 600, 5_000_000, "active", 19),
 ]
 MODELS = ["nexus-fast-v1", "gpt-4o-route", "claude-route"]
-ENDPOINTS = ["/v1/chat", "/v1/chat/completions", "/v1/embeddings"]
+ENDPOINTS = ["/v1/chat/completions"]
 CLEAN_PROMPTS = ["Summarise this quarterly report", "Translate the release notes to Indonesian",
                  "Draft a polite follow-up email", "Explain this stack trace", "Classify the support ticket"]
 THREATS = [

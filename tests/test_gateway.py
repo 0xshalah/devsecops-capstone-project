@@ -87,21 +87,21 @@ async def test_pii_toggle_disables_category(client, owner):
 
 # ---------- Gateway API key auth & scopes ----------
 async def test_completions_with_chat_scope_blocks_injection(client, chat_key):
-    r = await client.post("/api/gateway/completions", json={"messages": [{"role": "user", "content": INJECTION_PROMPT}]},
+    r = await client.post("/api/v1/chat/completions", json={"messages": [{"role": "user", "content": INJECTION_PROMPT}]},
                           headers={"X-API-Key": chat_key})
     assert r.status_code == 403
     assert r.json()["status"] == "blocked"
 
 
 async def test_bearer_api_key_is_accepted(client, chat_key):
-    r = await client.post("/api/gateway/completions", json={"messages": [{"role": "user", "content": INJECTION_PROMPT}]},
+    r = await client.post("/api/v1/chat/completions", json={"messages": [{"role": "user", "content": INJECTION_PROMPT}]},
                           headers=bearer(chat_key))
     assert r.status_code == 403 and r.json()["status"] == "blocked"
 
 
 async def test_metrics_scoped_key_rejected_on_completions(client, owner, create_key):
     secret = (await create_key(owner["headers"], scopes=["metrics:read"]))["secret"]
-    r = await client.post("/api/gateway/completions", json={"messages": [{"role": "user", "content": "hi"}]},
+    r = await client.post("/api/v1/chat/completions", json={"messages": [{"role": "user", "content": "hi"}]},
                           headers={"X-API-Key": secret})
     assert r.status_code == 403
     assert r.json()["detail"] == "API key is missing required scope: chat:write"
@@ -116,13 +116,13 @@ async def test_metrics_scoped_key_rejected_on_completions(client, owner, create_
     {"X-API-Key": "not-a-gateway-key"},
 ])
 async def test_completions_require_valid_api_key(client, headers):
-    r = await client.post("/api/gateway/completions", json={"messages": [{"role": "user", "content": "hi"}]},
+    r = await client.post("/api/v1/chat/completions", json={"messages": [{"role": "user", "content": "hi"}]},
                           headers=headers)
     assert r.status_code == 401
 
 
 async def test_console_jwt_cannot_call_gateway(client, owner):
-    r = await client.post("/api/gateway/completions", json={"messages": [{"role": "user", "content": "hi"}]},
+    r = await client.post("/api/v1/chat/completions", json={"messages": [{"role": "user", "content": "hi"}]},
                           headers=owner["headers"])
     assert r.status_code == 401
 
@@ -134,7 +134,7 @@ async def test_api_key_cannot_call_console_endpoints(client, chat_key):
 async def test_revoked_key_is_rejected(client, owner, create_key):
     created = await create_key(owner["headers"])
     assert (await client.delete(f"/api/keys/{created['key']['id']}", headers=owner["headers"])).status_code == 200
-    r = await client.post("/api/gateway/completions", json={"messages": [{"role": "user", "content": "hi"}]},
+    r = await client.post("/api/v1/chat/completions", json={"messages": [{"role": "user", "content": "hi"}]},
                           headers={"X-API-Key": created["secret"]})
     assert r.status_code == 401
 
@@ -159,4 +159,26 @@ async def test_plaintext_key_never_persisted(client, owner, create_key, mongo):
 
 async def test_gateway_rejects_extra_fields(client, chat_key):
     body = {"messages": [{"role": "user", "content": "hi"}], "workspace_id": "ws_victim"}
-    assert (await client.post("/api/gateway/completions", json=body, headers={"X-API-Key": chat_key})).status_code == 422
+    assert (await client.post("/api/v1/chat/completions", json=body, headers={"X-API-Key": chat_key})).status_code == 422
+
+
+@pytest.mark.parametrize("body", [
+    {"model": "auto", "messages": [{"role": "user", "content": "Summarize ticket #4821"}]},
+    {"messages": [{"role": "user", "content": "Summarize ticket #4821"}]},
+])
+async def test_auto_model_routes_to_default(client, chat_key, body):
+    r = await client.post("/api/v1/chat/completions", json=body, headers={"X-API-Key": chat_key})
+    assert r.status_code == 200, r.text
+    assert r.json()["status"] == "allowed" and r.json()["model"] == "nexus-fast-v1"
+
+
+async def test_unknown_model_rejected(client, chat_key):
+    body = {"model": "gpt-4o-mini", "messages": [{"role": "user", "content": "hi"}]}
+    assert (await client.post("/api/v1/chat/completions", json=body, headers={"X-API-Key": chat_key})).status_code == 422
+
+
+async def test_completions_log_public_endpoint(client, owner, chat_key):
+    r = await client.post("/api/v1/chat/completions", json={"messages": [{"role": "user", "content": "hello"}]},
+                          headers={"X-API-Key": chat_key})
+    logs = (await client.get("/api/logs", params={"q": r.json()["requestId"]}, headers=owner["headers"])).json()
+    assert logs["items"][0]["endpoint"] == "/v1/chat/completions"

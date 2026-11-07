@@ -29,7 +29,7 @@ async def test_api_key_rate_limit_returns_429_with_retry_after(client, signup, c
     owner = await signup("key-limit")
     created = await create_key(owner["headers"], rateLimit=2)
     headers = {"X-API-Key": created["secret"]}
-    statuses = [(await client.post("/api/gateway/completions", json=COMPLETION, headers=headers)) for _ in range(3)]
+    statuses = [(await client.post("/api/v1/chat/completions", json=COMPLETION, headers=headers)) for _ in range(3)]
     assert [r.status_code for r in statuses[:2]] == [403, 403]  # blocked by guardrails, still within budget
     throttled = statuses[2]
     assert throttled.status_code == 429
@@ -47,9 +47,9 @@ async def test_rate_limit_is_per_key(client, signup, create_key):
     owner = await signup("key-isolation")
     limited = (await create_key(owner["headers"], rateLimit=1))["secret"]
     other = (await create_key(owner["headers"], rateLimit=100))["secret"]
-    await client.post("/api/gateway/completions", json=COMPLETION, headers={"X-API-Key": limited})
-    assert (await client.post("/api/gateway/completions", json=COMPLETION, headers={"X-API-Key": limited})).status_code == 429
-    assert (await client.post("/api/gateway/completions", json=COMPLETION, headers={"X-API-Key": other})).status_code == 403
+    await client.post("/api/v1/chat/completions", json=COMPLETION, headers={"X-API-Key": limited})
+    assert (await client.post("/api/v1/chat/completions", json=COMPLETION, headers={"X-API-Key": limited})).status_code == 429
+    assert (await client.post("/api/v1/chat/completions", json=COMPLETION, headers={"X-API-Key": other})).status_code == 403
 
 
 async def test_workspace_global_rate_limit(client, signup):

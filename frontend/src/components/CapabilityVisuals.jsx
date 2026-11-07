@@ -8,7 +8,7 @@ const PROVIDERS = [
 
 export const RoutingVisual = () => (
   <div className="grid grid-cols-[auto_1fr] items-center gap-4 font-mono text-xs sm:gap-8" aria-hidden="true">
-    <div className="rounded-[5px] border border-[var(--line-strong)] px-3 py-2 text-zinc-200">/v1/chat</div>
+    <div className="rounded-[5px] border border-[var(--line-strong)] px-3 py-2 text-zinc-200">/v1/chat/<span className="block sm:inline">completions</span></div>
     <div className="space-y-2">
       {PROVIDERS.map((p, i) => (
         <div key={p.name} className="flex items-center gap-3">

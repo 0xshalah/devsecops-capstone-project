@@ -3,7 +3,10 @@
 //   registry-creds   (username/password)  container registry push
 //   kubeconfig-tollgate (secret file)     cluster access for deploy
 //   sonar-token      (secret text)        optional SonarQube analysis
-// Required agent tools: docker, git, python3, node 20 + yarn, kubectl, trivy, gitleaks.
+//   cosign-private-key (secret file)      cosign.key used to sign images and SBOM attestations
+//   cosign-password  (secret text)        password of cosign.key
+// Public key: cosign.pub at the repository root (see docs/supply-chain-signing.md).
+// Required agent tools: docker, git, python3, node 20 + yarn, kubectl, trivy, gitleaks, cosign v2.
 pipeline {
     agent any
 
@@ -155,8 +158,12 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'registry-creds', usernameVariable: 'REG_USER', passwordVariable: 'REG_PASS')]) {
                     sh '''
                         echo "$REG_PASS" | docker login ghcr.io -u "$REG_USER" --password-stdin
+                        mkdir -p ${REPORTS}/supply-chain
                         for img in ${BACKEND_IMAGE} ${FRONTEND_IMAGE}; do
+                          name=$(echo "$img" | sed 's#.*/##')
                           docker push $img:${IMAGE_TAG}
+                          # Record the immutable digest: signing, verification and deploy all use it, never a tag.
+                          docker inspect --format='{{index .RepoDigests 0}}' $img:${IMAGE_TAG} > ${REPORTS}/supply-chain/${name}.digest
                           docker tag $img:${IMAGE_TAG} $img:latest && docker push $img:latest
                         done
                     '''
@@ -164,19 +171,61 @@ pipeline {
             }
         }
 
+        stage('Sign & Attest (cosign)') {
+            when { allOf { branch 'main'; not { changeRequest() } } }
+            steps {
+                withCredentials([
+                    usernamePassword(credentialsId: 'registry-creds', usernameVariable: 'REG_USER', passwordVariable: 'REG_PASS'),
+                    file(credentialsId: 'cosign-private-key', variable: 'COSIGN_KEY'),
+                    string(credentialsId: 'cosign-password', variable: 'COSIGN_PASSWORD')
+                ]) {
+                    sh '''
+                        echo "$REG_PASS" | cosign login ghcr.io -u "$REG_USER" --password-stdin
+                        for name in tollgate-backend tollgate-frontend; do
+                          ref=$(cat ${REPORTS}/supply-chain/${name}.digest)
+                          cosign sign --yes --key "$COSIGN_KEY" \
+                            -a git-sha=${IMAGE_TAG} -a build=${BUILD_NUMBER} "$ref"
+                          cosign attest --yes --key "$COSIGN_KEY" --type cyclonedx \
+                            --predicate ${REPORTS}/security/sbom-${name}.cdx.json "$ref"
+                        done
+                    '''
+                }
+            }
+        }
+
+        stage('Verify Signatures') {
+            when { allOf { branch 'main'; expression { return params.DEPLOY } } }
+            steps {
+                // Gate: deploy never starts unless both images carry a valid signature and SBOM attestation.
+                sh '''
+                    if grep -q "REPLACE_WITH_YOUR_COSIGN_PUBLIC_KEY" cosign.pub; then
+                      echo "cosign.pub is still the placeholder. Commit your public key first (docs/supply-chain-signing.md)."; exit 1
+                    fi
+                    for name in tollgate-backend tollgate-frontend; do
+                      ref=$(cat ${REPORTS}/supply-chain/${name}.digest)
+                      cosign verify --key cosign.pub -a git-sha=${IMAGE_TAG} "$ref" > ${REPORTS}/supply-chain/verify-${name}.json
+                      cosign verify-attestation --key cosign.pub --type cyclonedx "$ref" > /dev/null
+                      echo "verified $ref"
+                    done
+                '''
+            }
+        }
+
         stage('Deploy to Kubernetes') {
             when { allOf { branch 'main'; expression { return params.DEPLOY } } }
             steps {
                 withCredentials([file(credentialsId: 'kubeconfig-tollgate', variable: 'KUBECONFIG')]) {
-                    dir('k8s') {
-                        sh '''
-                            kubectl kustomize . > /tmp/tollgate-rendered.yaml
-                            sed -i "s#\\(ghcr.io/0xshalah/tollgate-backend\\):latest#\\1:${IMAGE_TAG}#; s#\\(ghcr.io/0xshalah/tollgate-frontend\\):latest#\\1:${IMAGE_TAG}#" /tmp/tollgate-rendered.yaml
-                            kubectl apply -f /tmp/tollgate-rendered.yaml
-                            kubectl -n tollgate rollout status deploy/tollgate-backend --timeout=180s
-                            kubectl -n tollgate rollout status deploy/tollgate-frontend --timeout=180s
-                        '''
-                    }
+                    sh '''
+                        BACKEND_REF=$(cat ${REPORTS}/supply-chain/tollgate-backend.digest)
+                        FRONTEND_REF=$(cat ${REPORTS}/supply-chain/tollgate-frontend.digest)
+                        kubectl kustomize k8s > /tmp/tollgate-rendered.yaml
+                        # Pin the exact digests that passed Verify Signatures; the :latest tag is never deployed.
+                        sed -i "s#ghcr.io/0xshalah/tollgate-backend:latest#${BACKEND_REF}#; s#ghcr.io/0xshalah/tollgate-frontend:latest#${FRONTEND_REF}#" /tmp/tollgate-rendered.yaml
+                        if grep -q "tollgate-[a-z]*:latest" /tmp/tollgate-rendered.yaml; then echo "Unpinned image in manifest"; exit 1; fi
+                        kubectl apply -f /tmp/tollgate-rendered.yaml
+                        kubectl -n tollgate rollout status deploy/tollgate-backend --timeout=180s
+                        kubectl -n tollgate rollout status deploy/tollgate-frontend --timeout=180s
+                    '''
                 }
             }
         }

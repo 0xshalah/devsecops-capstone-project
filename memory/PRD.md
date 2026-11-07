@@ -39,3 +39,23 @@ Phase 4: Account menu and profile management. Header account dropdown (session i
 - P0: FastAPI endpoints for keys, logs, metrics, /v1/chat; swap gatewayApi methods to fetch
 - P1: real auth (Emergent-managed email/password + Google) replacing src/auth/AuthContext.jsx, persistent key storage (hashed), log export
 - P2: per-key usage drilldown, Dockerfile + nginx
+
+## Update 2026-11-07 (README, tests, endpoint)
+- README synced to real state (badge, status, Fase 1-4 checklists, stack React/FastAPI/MongoDB, run & test instructions)
+- Removed legacy backend/tests (hardcoded demo password); tests/conftest.py now uses TEST_DB_NAME (default <DB_NAME>_pytest), dropped + seeded once per run
+- Gateway unified: POST /api/v1/chat/completions (nginx /v1/* -> /api/v1/*); old /api/gateway/completions removed; model "auto" (default) -> nexus-fast-v1
+- pytest: 90/90 pass
+- Backlog: OpenAI choices[] response format, real multi-provider routing, rollback stage, Sonar quality gate, pipeline notifications, update ARCHITECTURE.md
+
+## Update 2026-11-07 (Landing SaaS revamp, Phase 1)
+- Pricing: 4 plans (Free/Pro/Team/Enterprise) from PLANS in frontend/src/content.js; Monthly/Annual (Save 20%) + USD/IDR toggles; CTAs -> /auth/sign-up?plan&billing&currency, Enterprise -> /contact
+- New sections: How it works (3 steps), FAQ (8, accordion), closing CTA; navbar How it works + FAQ; EN/ID copy; no em dash
+- Testing agent iteration_1: 95% -> mobile menu scroll offset fixed, USD thousands separator fixed
+- Next: Phase 2 real payments (Stripe USD, Midtrans/Xendit IDR) + plan stored on account + quota enforcement; Phase 3 Billing page, quota emails, working Enterprise contact form
+
+## Update 2026-11-07 (Pipeline: cosign signing + evidence report)
+- Jenkinsfile: Push records digests (test_reports/supply-chain/*.digest); new stages "Sign & Attest (cosign)" and "Verify Signatures" (gate before deploy); deploy pins verified digests and rejects :latest
+- New credentials: cosign-private-key (file), cosign-password (text); cosign.pub placeholder at repo root (verify stage fails while placeholder)
+- docs/supply-chain-signing.md (key gen, Jenkins creds, manual verify, rotation); docs/evidence-report.md (16 stages, LOCAL vs WAITING JENKINS, findings F-01..F-08, OWASP API Top 10 mapping); raw local reports in docs/evidence/local/
+- Local results: gitleaks 1 false positive (tests/test_auth.py:138), bandit 0 med+, semgrep 0, pip-audit starlette+pymongo vulnerable, yarn audit 11 high, pytest 90/90 cov 96.3%
+- Next: fix F-01..F-05, run real Jenkins, fill evidence, Kyverno verifyImages

@@ -1,494 +1,495 @@
-# DevSecOps Capstone Project — Automated CI/CD Pipeline for a Full-Stack SaaS AI API Gateway
+# Automated DevSecOps CI/CD Pipeline
+
+### Internship Capstone Project — *Shift-left security* dari `git push` hingga Kubernetes
 
 <p align="left">
-  <img alt="Status" src="https://img.shields.io/badge/status-phase--1%20architecture-blue" />
+  <img alt="Status" src="https://img.shields.io/badge/status-pipeline%20as%20code%20selesai%20%C2%B7%20menunggu%20eksekusi-orange" />
   <img alt="Jenkins" src="https://img.shields.io/badge/CI%2FCD-Jenkins-D24939?logo=jenkins&logoColor=white" />
-  <img alt="Docker" src="https://img.shields.io/badge/Container-Docker-2496ED?logo=docker&logoColor=white" />
-  <img alt="Kubernetes" src="https://img.shields.io/badge/Orchestration-K3s%20%2F%20Minikube-326CE5?logo=kubernetes&logoColor=white" />
-  <img alt="Security" src="https://img.shields.io/badge/Security-SonarQube%20%2B%20Trivy-4E9BCD" />
+  <img alt="SAST" src="https://img.shields.io/badge/SAST-SonarQube%20%C2%B7%20Bandit%20%C2%B7%20Semgrep-4E9BCD" />
+  <img alt="SCA" src="https://img.shields.io/badge/SCA%20%26%20Image-Trivy%20%C2%B7%20pip--audit%20%C2%B7%20yarn%20audit-1904DA" />
+  <img alt="Secrets" src="https://img.shields.io/badge/Secret%20Scan-Gitleaks-red" />
+  <img alt="Docker" src="https://img.shields.io/badge/Container-Docker%20non--root-2496ED?logo=docker&logoColor=white" />
+  <img alt="Kubernetes" src="https://img.shields.io/badge/Deploy-Kubernetes%20%2B%20Kustomize-326CE5?logo=kubernetes&logoColor=white" />
+  <img alt="Monitoring" src="https://img.shields.io/badge/Monitoring-Prometheus%20%2B%20Grafana-E6522C?logo=prometheus&logoColor=white" />
+  <img alt="Tests" src="https://img.shields.io/badge/pytest-90%20passed-brightgreen" />
   <img alt="License" src="https://img.shields.io/badge/license-MIT-green" />
 </p>
 
-> **Internship Capstone Project** — Repository ini adalah *logbook* progres dan laporan teknis
-> implementasi **Automated DevSecOps CI/CD Pipeline** dengan studi kasus aplikasi
-> **Full-Stack SaaS AI API Gateway**.
+> **Fokus capstone ini adalah pipeline-nya.** Repository ini adalah logbook dan laporan teknis
+> implementasi **Automated DevSecOps CI/CD Pipeline**: setiap perubahan kode diverifikasi, dipindai
+> keamanannya, dikemas menjadi image yang ter-hardening, lalu di-deploy ke Kubernetes secara
+> terotomasi dan dapat diaudit.
+>
+> Untuk menguji pipeline dengan beban yang realistis, dibangun satu aplikasi **studi kasus**:
+> **Tollgate**, sebuah *SaaS AI API Gateway* (React + FastAPI + MongoDB). Aplikasi ini adalah
+> **objek uji**, bukan deliverable utama (lihat [§11](#11-studi-kasus-tollgate-workload-uji)).
+
+**Bukti untuk reviewer**: [Laporan Bukti Pipeline](./docs/evidence-report.md) (hasil per tahap, temuan, pemetaan OWASP)
+· [Panduan Supply Chain Signing (cosign)](./docs/supply-chain-signing.md) · [`jenkins/Jenkinsfile`](./jenkins/Jenkinsfile)
 
 ---
 
 ## Daftar Isi
 
 1. [Ringkasan Eksekutif](#1-ringkasan-eksekutif)
-2. [Tujuan Projek](#2-tujuan-projek)
-3. [Topologi & Pilar DevSecOps](#3-topologi--pilar-devsecops)
-4. [Diagram Arsitektur](#4-diagram-arsitektur)
-5. [Spesifikasi Aplikasi Target](#5-spesifikasi-aplikasi-target)
-6. [Struktur Direktori](#6-struktur-direktori)
-7. [Roadmap Eksekusi (4 Fase)](#7-roadmap-eksekusi-4-fase)
-8. [Progress Checklist](#8-progress-checklist)
-9. [Tech Stack](#9-tech-stack)
-10. [Cara Menjalankan (Preview Fase 2+)](#10-cara-menjalankan-preview-fase-2)
-11. [Dokumentasi Terkait](#11-dokumentasi-terkait)
-12. [Kontak](#12-kontak)
+2. [Tujuan & Prinsip](#2-tujuan--prinsip)
+3. [Arsitektur Pipeline](#3-arsitektur-pipeline)
+4. [Tahapan Pipeline (Jenkinsfile)](#4-tahapan-pipeline-jenkinsfile)
+5. [Security Gates & Kebijakan Gagal](#5-security-gates--kebijakan-gagal)
+6. [Container Hardening](#6-container-hardening)
+7. [Deployment ke Kubernetes](#7-deployment-ke-kubernetes)
+8. [Observability & Alerting](#8-observability--alerting)
+9. [Artefak yang Dapat Diaudit](#9-artefak-yang-dapat-diaudit)
+10. [Status & Roadmap](#10-status--roadmap)
+11. [Studi Kasus: Tollgate (Workload Uji)](#11-studi-kasus-tollgate-workload-uji)
+12. [Struktur Repository](#12-struktur-repository)
+13. [Menjalankan & Mereproduksi Pipeline Secara Lokal](#13-menjalankan--mereproduksi-pipeline-secara-lokal)
+14. [Tech Stack](#14-tech-stack)
+15. [Kontak](#15-kontak)
 
 ---
 
 ## 1. Ringkasan Eksekutif
 
-Projek ini mendemonstrasikan bagaimana sebuah aplikasi **SaaS AI API Gateway** dapat dibangun
-dan dikirim (*delivered*) melalui pipeline **CI/CD otomatis yang aman sejak awal (shift-left security)**.
-Setiap `git push` ke branch `main` akan memicu Jenkins melalui **GitHub Webhook**, menjalankan
-serangkaian tahapan build, pengujian, pemindaian keamanan, pembuatan image container, hingga
-deployment ke cluster Kubernetes — tanpa intervensi manual.
-
-Fokus penilaian bukan hanya pada aplikasi yang berjalan, tetapi pada **kualitas rekayasa pipeline**:
-bagaimana kode diverifikasi, bagaimana kerentanan dideteksi sebelum rilis, dan bagaimana sistem
-dapat dipulihkan (*rollback*) secara terkontrol.
-
 | Aspek | Keterangan |
 | :--- | :--- |
-| **Nama Projek** | Automated DevSecOps CI/CD Pipeline — SaaS AI API Gateway |
+| **Judul** | Automated DevSecOps CI/CD Pipeline |
 | **Jenis** | Internship Capstone Project |
-| **Repositori** | [`0xshalah/devsecops-capstone-project`](https://github.com/0xshalah/devsecops-capstone-project) |
-| **Branch Utama** | `main` |
-| **Status Saat Ini** | **Fase 1 — Inisialisasi dokumentasi arsitektur & struktur folder** |
-| **Model Kerja** | 4 fase berurutan (*phased delivery*) |
+| **Deliverable utama** | `jenkins/Jenkinsfile`, `docker/`, `k8s/`, `monitoring/`, suite keamanan `tests/` |
+| **Workload uji** | Tollgate — SaaS AI API Gateway (`frontend/`, `backend/`, `database/`) |
+| **Repositori** | [`0xshalah/devsecops-capstone-project`](https://github.com/0xshalah/devsecops-capstone-project) · branch `main` |
+| **Status** | **Pipeline as code, manifest K8s, dan monitoring sudah selesai ditulis.** Tahap berikutnya: menjalankan pipeline di Jenkins sungguhan dan menguji deploy/rollback di cluster. |
+
+**Apa yang dibuktikan projek ini**
+
+- **Shift-left security**: secret scan, SAST, dan SCA berjalan *sebelum* image dibangun; build berhenti
+  saat ditemukan temuan berisiko tinggi.
+- **Security testing sebagai unit test**: 90 tes pytest memverifikasi kontrol keamanan aplikasi
+  (autentikasi, BOLA/BFLA/BOPLA, scope API key, guardrail, rate limit) di setiap build.
+- **Immutable artifact**: image dipindai Trivy, diberi SBOM, lalu dicatat **digest**-nya saat push.
+  Tanda tangan, verifikasi, dan deploy semuanya memakai digest yang sama; tag `:latest` tidak pernah di-deploy.
+- **Supply chain integrity**: image dan SBOM ditandatangani **cosign**; stage *Verify Signatures*
+  menolak deploy jika tanda tangan atau attestation tidak valid.
+- **Hardened runtime**: container non-root, read-only filesystem, capability di-drop, seccomp,
+  NetworkPolicy *default-deny*, probe kesehatan, rolling update tanpa downtime.
+- **Observability**: metrik Prometheus dari aplikasi, 7 alert rule keamanan/reliabilitas, dashboard Grafana.
 
 ---
 
-## 2. Tujuan Projek
+## 2. Tujuan & Prinsip
 
 1. **Membangun pipeline DevSecOps end-to-end** yang terotomasi dari commit hingga runtime.
-2. **Menerapkan shift-left security**: SAST dan SCA dijalankan pada setiap build, bukan setelah rilis.
-3. **Menyediakan studi kasus nyata** berupa aplikasi Full-Stack SaaS AI API Gateway yang cukup
-   kompleks untuk menguji pipeline (multi-service, container, health probe, database).
-4. **Menghasilkan artefak yang dapat diaudit**: laporan SonarQube, laporan Trivy, riwayat build
-   Jenkins, dan manifest Kubernetes yang ter-versi.
+2. **Menerapkan shift-left security**: SAST, SCA, dan secret scan dijalankan pada setiap build.
+3. **Menghasilkan artefak yang dapat diaudit**: laporan SARIF/JSON, JUnit, SBOM, riwayat build Jenkins,
+   dan manifest Kubernetes yang ter-versi.
+4. **Menguji pipeline dengan workload realistis**: multi-service, container, database, health probe,
+   dan permukaan serangan nyata (auth, API key, input LLM).
 5. **Menjadi logbook teknis** yang mendokumentasikan keputusan arsitektur dan progres magang.
 
-### Prinsip yang Dipegang
-
-- **Security as Code** — aturan keamanan hidup di repository, bukan di kepala engineer.
-- **Immutable Artifact** — image yang lolos scan adalah image yang di-deploy; tidak ada rebuild di runtime.
-- **Fail Fast, Fail Safe** — pipeline berhenti pada temuan `CRITICAL`; deployment tidak pernah
-  menimpa versi sehat tanpa strategi rollback.
-- **Least Privilege** — container berjalan sebagai non-root, secret tidak masuk ke image.
-
----
-
-## 3. Topologi & Pilar DevSecOps
-
-### 3.1 Source Control & Trigger
-
-- **GitHub Repository**: `devsecops-capstone-project` (branch `main` sebagai *protected branch*).
-- **Webhook**: GitHub mengirim event `push` ke endpoint Jenkins (`/github-webhook/`) secara otomatis
-  setiap ada commit baru — tidak ada polling.
-- **Branching**: `main` untuk rilis, `feature/*` untuk pengembangan; Pull Request memicu build
-  verifikasi sebelum merge.
-
-### 3.2 CI/CD Engine
-
-- **Jenkins** sebagai orkestrator tunggal pipeline.
-- Pipeline didefinisikan sebagai **Jenkinsfile** (declarative pipeline) yang tersimpan di repository
-  sehingga dapat di-review seperti kode.
-- Tahapan: `Checkout → Build → Unit Test → SAST → SCA → Docker Build → Image Scan → Push Registry → Deploy → Verify`.
-
-### 3.3 Security Scanning (DevSecOps)
-
-| Jenis | Tool | Target | Gate |
-| :--- | :--- | :--- | :--- |
-| **SAST** | SonarQube | Source code (frontend & backend) | *Quality Gate* harus `Passed` |
-| **SCA** | Trivy (`fs`) | Dependency & lockfile | Gagal jika ada `CRITICAL` |
-| **Container Image Scan** | Trivy (`image`) | Layer Docker image sebelum push | Gagal jika ada `CRITICAL` dengan fix tersedia |
-| **Secret Scan** *(opsional)* | Gitleaks | Riwayat commit | Gagal jika secret terdeteksi |
-
-### 3.4 Containerization & Registry
-
-- **Docker multi-stage build** untuk memperkecil ukuran image dan menghilangkan toolchain build.
-- **Non-root user** (`USER appuser`, UID 10001) pada image runtime.
-- **Read-only root filesystem** dan `no-new-privileges` bila didukung runtime.
-- **Registry**: Docker Hub / GitHub Container Registry (GHCR), dengan tagging immutable
-  `:<git-sha>` dan mutable `:latest` hanya untuk lingkungan non-produksi.
-
-### 3.5 Runtime Deployment
-
-- **Kubernetes ringan**: K3s (produksi lokal) atau Minikube (pengembangan).
-- **Liveness Probe** → `GET /health` memastikan proses hidup; jika gagal, pod di-restart.
-- **Readiness Probe** → `GET /health` (atau `/ready`) memastikan pod siap menerima trafik;
-  jika gagal, pod dikeluarkan dari Service endpoint.
-- **Resource requests/limits** dan **Horizontal Pod Autoscaler** (fase lanjutan).
-- **RollingUpdate** dengan `maxUnavailable: 0` untuk zero-downtime deployment.
-
-### 3.6 Komponen Tambahan (Fase Lanjutan)
-
-- **Prometheus + Grafana** — metrik pipeline, aplikasi (latency, error rate, token usage), dan cluster.
-- **Cloudflare Zero Trust Tunnel** — ekspos aplikasi ke publik tanpa membuka port inbound,
-  tanpa IP publik, dengan autentikasi di edge.
-- **Notifikasi status pipeline** — Slack/Discord/Telegram webhook untuk hasil build & deployment.
+| Prinsip | Implementasi di repo |
+| :--- | :--- |
+| **Security as Code** | Seluruh gate keamanan ada di `jenkins/Jenkinsfile`; kebijakan runtime di `k8s/` |
+| **Immutable Artifact** | Tag `${GIT_COMMIT:0:12}`; `sed` mem-pin tag tersebut ke manifest sebelum `kubectl apply` |
+| **Fail Fast, Fail Safe** | `--exit-code 1` / `--strict` / `--error` pada scanner; `maxUnavailable: 0` saat rollout |
+| **Least Privilege** | UID 10001 / 101, `readOnlyRootFilesystem`, `capabilities.drop: [ALL]`, `automountServiceAccountToken: false` |
+| **Secrets out of Git** | Gitleaks di stage awal; `k8s/secret.example.yaml` hanya template; secret dari kredensial Jenkins |
 
 ---
 
-## 4. Diagram Arsitektur
-
-### 4.1 Alur End-to-End Pipeline
+## 3. Arsitektur Pipeline
 
 ```mermaid
 flowchart LR
-    DEV["Developer<br/>git push"] --> GH["GitHub Repository<br/>devsecops-capstone-project"]
-    GH -- "Webhook (push event)" --> JEN["Jenkins<br/>CI/CD Orchestrator"]
+    DEV["Developer<br/>git push"] --> GH["GitHub<br/>branch main / PR"]
+    GH -- "Webhook" --> JEN["Jenkins<br/>Declarative Pipeline"]
 
-    subgraph CI["Continuous Integration & Security"]
+    subgraph CI["Continuous Integration & Security (setiap build)"]
         direction TB
-        JEN --> BUILD["Build & Unit Test"]
-        BUILD --> SAST["SAST<br/>SonarQube"]
-        SAST --> SCA["SCA<br/>Trivy fs"]
-        SCA --> IMG["Docker Build<br/>multi-stage + non-root"]
-        IMG --> SCAN["Image Scan<br/>Trivy image"]
+        CO["Checkout"] --> SEC["Secret Scan<br/>Gitleaks"]
+        SEC --> PAR{{"Paralel"}}
+        PAR --> BAN["SAST<br/>Bandit"]
+        PAR --> SEM["SAST<br/>Semgrep OWASP"]
+        PAR --> PIP["SCA<br/>pip-audit"]
+        PAR --> YRN["SCA<br/>yarn audit"]
+        BAN & SEM & PIP & YRN --> TEST["Unit & Security Tests<br/>pytest + Mongo ephemeral"]
+        TEST --> SQ["SonarQube<br/>(opsional)"]
+        SQ --> BUILD["Build Images<br/>multi-stage, non-root"]
+        BUILD --> TRV["Trivy image + SBOM<br/>Trivy config (IaC)"]
     end
 
-    SCAN -- "PASS" --> REG[("Container Registry<br/>GHCR / Docker Hub")]
-    SCAN -. "FAIL (CRITICAL)" .-> NOTIF["Pipeline Notification<br/>Slack / Discord"]
+    JEN --> CO
+    TRV -- "PASS (main)" --> REG[("GHCR<br/>:git-sha + :latest<br/>digest dicatat")]
+    TRV -. "FAIL HIGH/CRITICAL" .-> STOP["Build gagal<br/>laporan diarsipkan"]
 
-    REG --> DEPLOY["Deploy to Kubernetes<br/>kubectl apply / rollout"]
-    DEPLOY --> K8S
+    REG --> SIGN["Sign & Attest<br/>cosign sign + attest SBOM<br/>(per digest)"]
+    SIGN -- "param DEPLOY=true" --> VER{"Verify Signatures<br/>cosign verify +<br/>verify-attestation"}
+    VER -. "tanda tangan tidak valid" .-> STOP
+    VER -- "valid" --> DEP["kubectl apply (kustomize)<br/>image di-pin ke digest<br/>rollout status"]
+    DEP --> K8S
 
-    subgraph K8S["Kubernetes Cluster (K3s / Minikube)"]
+    subgraph K8S["Kubernetes — namespace tollgate"]
         direction TB
-        SVC["Service<br/>ClusterIP"] --> FE["Frontend Pod<br/>SaaS Dashboard"]
-        SVC --> BE["Backend Pod<br/>AI API Gateway"]
-        BE --> DB[("Database<br/>SQLite / PostgreSQL")]
-        BE -. "liveness & readiness<br/>GET /health" .-> PROBE["kubelet Probe"]
+        ING["Ingress"] --> FE["Frontend x2<br/>nginx non-root"]
+        FE --> BE["Backend x2..6 (HPA)<br/>FastAPI non-root"]
+        BE --> DB[("MongoDB 7<br/>StatefulSet + PVC")]
     end
 
-    K8S --> MON["Prometheus + Grafana<br/>Monitoring & Alerting"]
-    K8S --> CF["Cloudflare Zero Trust Tunnel<br/>Public Access"]
-    JEN --> NOTIF
-    DEPLOY -. "rollback on failure" .-> REG
+    K8S --> PROM["Prometheus<br/>ServiceMonitor + alert rules"] --> GRAF["Grafana"]
+    DEP -. "param RUN_DAST=true" .-> ZAP["DAST<br/>OWASP ZAP baseline"]
 ```
 
-### 4.2 Alur Request Runtime (AI Gateway)
+### Lapisan Keamanan (Defense in Depth)
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant U as User / SDK
-    participant CF as Cloudflare Tunnel
-    participant FE as Frontend (Next.js)
-    participant BE as Backend Gateway
-    participant G as Guardrails (Prompt Filter)
-    participant DB as Database
-    participant LLM as LLM Provider / Mock
-
-    U->>CF: HTTPS Request
-    CF->>FE: Forward (Zero Trust authenticated)
-    U->>BE: POST /v1/chat/completions (Bearer API Key)
-    BE->>BE: Validate API Key (format + hash lookup)
-    BE->>DB: SELECT api_keys, quota
-    DB-->>BE: key valid, remaining_quota
-    BE->>G: Scan prompt (prompt injection / jailbreak)
-    alt Prompt ditolak
-        G-->>BE: Blocked (policy violation)
-        BE-->>U: 400 Bad Request + reason
-    else Prompt lolos
-        G-->>BE: Allowed + sanitized prompt
-        BE->>BE: Estimate token count
-        BE->>LLM: Route to model (mock / real)
-        LLM-->>BE: Completion + usage
-        BE->>DB: INSERT token_transactions (usage log)
-        BE-->>U: 200 OK + response + usage
-    end
-```
-
-### 4.3 Lapisan Keamanan (Defense in Depth)
-
-```mermaid
-flowchart TB
-    L1["Layer 1 — Source<br/>Branch protection, PR review, signed commit"]
-    L2["Layer 2 — Code<br/>SonarQube SAST, linting, secret scan"]
-    L3["Layer 3 — Dependency<br/>Trivy SCA, lockfile pinning"]
-    L4["Layer 4 — Image<br/>Multi-stage, non-root, minimal base, Trivy image scan"]
-    L5["Layer 5 — Runtime<br/>K8s NetworkPolicy, resource limits, probes, RBAC"]
-    L6["Layer 6 — Edge<br/>Cloudflare Zero Trust, TLS, rate limiting"]
-    L1 --> L2 --> L3 --> L4 --> L5 --> L6
-```
+| Layer | Kontrol | Lokasi |
+| :--- | :--- | :--- |
+| 1. Source | Secret scan Gitleaks (SARIF, redacted) | `Jenkinsfile` › *Secret Scan* |
+| 2. Code | SAST Bandit (`-ll`), Semgrep (`p/owasp-top-ten`, `p/python`, `p/react`), SonarQube | `Jenkinsfile` › *Static Analysis* |
+| 3. Dependency | pip-audit `--strict`, yarn audit (gagal ≥ high), lockfile `--frozen-lockfile` | `Jenkinsfile` › *SCA* |
+| 4. Application | 90 tes keamanan & fungsional (auth, BOLA/BFLA/BOPLA, guardrail, rate limit) | `tests/` |
+| 5. Image | Multi-stage, base slim/alpine, non-root, Trivy vuln + secret, SBOM CycloneDX | `docker/`, *Trivy* |
+| 5b. Supply chain | Tanda tangan cosign per digest + attestation SBOM, diverifikasi dengan `cosign.pub` sebelum deploy | *Sign & Attest*, *Verify Signatures* |
+| 6. IaC | `trivy config` pada `docker/` & `k8s/` (gagal HIGH/CRITICAL) | *Trivy* |
+| 7. Runtime | NetworkPolicy default-deny, securityContext, probes, resource limits, PDB | `k8s/` |
+| 8. Edge | Ingress TLS, header keamanan & CSP di nginx, rate limit aplikasi | `k8s/ingress.yaml`, `docker/nginx/` |
 
 ---
 
-## 5. Spesifikasi Aplikasi Target
+## 4. Tahapan Pipeline (Jenkinsfile)
 
-### 5.1 Frontend — SaaS Landing Page & Dashboard
+File: [`jenkins/Jenkinsfile`](./jenkins/Jenkinsfile) — declarative pipeline, `timeout 60 menit`,
+`disableConcurrentBuilds`, `buildDiscarder (20 build)`, timestamps.
 
-| Fitur | Deskripsi |
-| :--- | :--- |
-| **Landing Page** | Halaman produk SaaS modern: hero section, value proposition, daftar fitur, tabel harga (Free / Pro / Enterprise), CTA. |
-| **Authentication UI** | Halaman login/register, sesi pengguna, proteksi route dashboard. |
-| **API Key Management** | Buat, lihat (masked), rotasi, dan revoke API Key. Key hanya ditampilkan sekali saat dibuat. |
-| **Live Playground** | Antarmuka uji prompt interaktif: pilih model, atur temperature/max tokens, kirim prompt, tampilkan respons streaming. |
-| **Usage Dashboard** | Grafik pemakaian token harian/bulanan, sisa kuota, estimasi biaya, riwayat request terakhir. |
+| # | Stage | Tool / Perintah | Artefak | Kondisi gagal | Kapan jalan |
+| :-: | :--- | :--- | :--- | :--- | :--- |
+| 1 | **Checkout** | `checkout scm` | — | — | selalu |
+| 2 | **Secret Scan** | `gitleaks detect --redact` | `security/gitleaks.sarif` | secret terdeteksi | selalu |
+| 3a | **SAST: Bandit** | `bandit -r backend database -ll` | `security/bandit.json` | temuan medium+ | paralel |
+| 3b | **SAST: Semgrep** | `semgrep scan --config p/owasp-top-ten p/python p/react --error` | `security/semgrep.sarif` | ada finding | paralel |
+| 3c | **SCA: Python** | `pip-audit -r requirements.prod.txt --strict` | `security/pip-audit.json` | ada CVE | paralel |
+| 3d | **SCA: Node** | `yarn install --frozen-lockfile --ignore-scripts` + `yarn audit --level high` | log | high / critical | paralel |
+| 4 | **Unit & Security Tests** | MongoDB ephemeral (`mongo:7.0`) + `pytest` (xdist, secret di-generate `openssl rand`) | `pytest/junit.xml` | ada tes gagal | selalu |
+| 5 | **SonarQube** | `sonar-scanner-cli` + coverage JUnit | dashboard SonarQube | *(belum ada quality gate wait)* | jika `SONAR_HOST_URL` ada |
+| 6 | **Build Images** | `docker build` backend & frontend paralel, tag `git-sha` | image lokal | build error | selalu |
+| 7 | **Image & IaC Scan** | `trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1`, SBOM CycloneDX, `trivy config docker k8s` | `security/trivy-*.sarif`, `security/sbom-*.cdx.json` | HIGH/CRITICAL | selalu |
+| 8 | **Push Images** | `docker push` ke GHCR (`:git-sha` + `:latest`), catat digest via `docker inspect` | `supply-chain/<image>.digest` | auth / push error | `main`, bukan PR |
+| 9 | **Sign & Attest** | `cosign sign --key` (anotasi `git-sha`, `build`) + `cosign attest --type cyclonedx` per digest | signature & attestation di GHCR, entri Rekor | key / registry error | `main`, bukan PR |
+| 10 | **Verify Signatures** | `cosign verify --key cosign.pub -a git-sha=…` + `cosign verify-attestation --type cyclonedx` | `supply-chain/verify-<image>.json` | tanda tangan/attestation tidak valid, atau `cosign.pub` masih placeholder | `main` + `DEPLOY=true` |
+| 11 | **Deploy to Kubernetes** | `kubectl kustomize` → pin **digest** terverifikasi → tolak jika masih `:latest` → `kubectl apply` → `rollout status --timeout=180s` | manifest ter-render | rollout tidak siap | `main` + `DEPLOY=true` |
+| 12 | **DAST** | `zap-baseline.py` terhadap `STAGING_URL` | `security/zap-baseline.{html,json}` | informatif (`-I`) | `RUN_DAST=true` |
+| — | **post** | `archiveArtifacts test_reports/**` (fingerprint), `docker image prune`, `cleanWs` | arsip build | — | selalu |
 
-**Rencana stack**: Next.js (App Router) + TypeScript + Tailwind CSS, di-serve sebagai static/standalone
-build dan dikemas dalam container non-root (port 3000).
+**Kredensial Jenkins yang dibutuhkan**: `registry-creds` (GHCR), `kubeconfig-tollgate` (file),
+`cosign-private-key` (file), `cosign-password` (secret text), `sonar-token` (opsional).
+**Tools di agent**: docker, git, python3, node 20 + yarn, kubectl, trivy, gitleaks, cosign v2.
+**Public key**: [`cosign.pub`](./cosign.pub) di root repo (masih placeholder, ganti sesuai [panduan](./docs/supply-chain-signing.md)).
 
-### 5.2 Backend Core — AI API Gateway Engine
-
-| Komponen | Tanggung Jawab |
-| :--- | :--- |
-| **Reverse Proxy & Router** | Meneruskan request ke model AI/LLM yang dipilih; mendukung beberapa provider dan fallback. |
-| **`GET /health`** | Endpoint ringan untuk **liveness** & **readiness** probe Kubernetes (tanpa dependency eksternal berat). |
-| **`GET /ready`** *(opsional)* | Memeriksa koneksi database sebelum menyatakan pod siap menerima trafik. |
-| **API Key Validation** | Verifikasi format, hash lookup, status aktif/revoked, dan kuota tersisa. |
-| **AI Security / Guardrails** | Filter **prompt injection**, deteksi jailbreak, blokir pola berbahaya, pembatasan panjang input. |
-| **Token Estimator** | Estimasi jumlah token sebelum request (pre-flight) dan pencatatan usage aktual pasca-request. |
-| **LLM Routing** | Mode **mock** (deterministik, untuk CI/test tanpa biaya) dan mode **real** (provider API via env var). |
-| **Rate Limiting** | Pembatasan request per API Key / per IP untuk mencegah penyalahgunaan. |
-
-**Rencana stack**: Node.js (Fastify/Express) + TypeScript, atau Python (FastAPI). Keputusan final
-dicatat sebagai ADR pada Fase 2. Container berjalan sebagai `appuser` (UID 10001), port 8080.
-
-### 5.3 Database Layer
-
-- **Fase 2 (MVP)**: SQLite (file-based, zero-config) untuk mempercepat iterasi dan memudahkan CI.
-- **Fase 4+**: Migrasi ke PostgreSQL (StatefulSet/Deployment + PVC) bila diperlukan konkurensi tulis.
-- **Skema inti**:
-
-```mermaid
-erDiagram
-    USERS ||--o{ API_KEYS : owns
-    API_KEYS ||--o{ TOKEN_TRANSACTIONS : generates
-    USERS {
-        uuid id PK
-        string email UK
-        string password_hash
-        string plan
-        int monthly_quota
-        timestamp created_at
-    }
-    API_KEYS {
-        uuid id PK
-        uuid user_id FK
-        string key_prefix
-        string key_hash
-        string status
-        timestamp last_used_at
-        timestamp created_at
-    }
-    TOKEN_TRANSACTIONS {
-        uuid id PK
-        uuid api_key_id FK
-        string model
-        int prompt_tokens
-        int completion_tokens
-        int total_tokens
-        int latency_ms
-        string status
-        timestamp created_at
-    }
-```
-
-**Prinsip penyimpanan secret**: API Key **tidak pernah** disimpan dalam bentuk plaintext —
-hanya `key_hash` (SHA-256 + salt) dan `key_prefix` untuk keperluan tampilan.
+**Parameter build**: `DEPLOY` (default `false`), `RUN_DAST` (default `false`), `STAGING_URL`.
 
 ---
 
-## 6. Struktur Direktori
+## 5. Security Gates & Kebijakan Gagal
+
+| Gate | Ambang | Efek |
+| :--- | :--- | :--- |
+| Secret di repo | ≥ 1 temuan Gitleaks | Pipeline berhenti sebelum analisis lain |
+| SAST Python | Bandit severity ≥ medium; Semgrep finding apa pun | Stage gagal |
+| Dependency Python | CVE apa pun (pip-audit `--strict`) | Stage gagal |
+| Dependency Node | Advisory high / critical | Stage gagal |
+| Tes aplikasi | Satu tes gagal | Build merah, JUnit dipublikasikan |
+| Image | Kerentanan HIGH/CRITICAL yang sudah ada fix-nya, atau secret dalam image | Image tidak di-push |
+| Tanda tangan | Tidak ada tanda tangan cosign valid untuk digest, anotasi `git-sha` tidak cocok, attestation SBOM tidak valid, atau `cosign.pub` masih placeholder | **Deploy ditolak** |
+| Image ter-pin | Manifest ter-render masih berisi image `:latest` | Deploy ditolak |
+| IaC | Misconfiguration HIGH/CRITICAL di Dockerfile / manifest | Image tidak di-push |
+| Deploy | Rollout tidak `Ready` dalam 180 detik | Stage gagal *(rollback otomatis belum ada)* |
+
+### Kontrol keamanan aplikasi yang diverifikasi di stage *Tests*
+
+| Kategori | Contoh yang diuji | File |
+| :--- | :--- | :--- |
+| Autentikasi | JWT wajib, token palsu/kedaluwarsa ditolak, lockout setelah 5 gagal, anti user-enumeration (pesan & waktu respons sama), field privilese ditolak | `tests/test_auth.py` |
+| OWASP API Top 10 | **BOLA** (akses workspace lain → 404), **BFLA** (role Viewer/Member dibatasi), **BOPLA** (field tambahan → 422) | `tests/test_bola_bfla.py` |
+| API key | Scope `chat:write`, key revoked/rotated ditolak, plaintext tidak pernah disimpan | `tests/test_gateway.py` |
+| Input LLM | Prompt injection (termasuk base64 & Bahasa Indonesia) diblokir, PII diredaksi sebelum ke model | `tests/test_gateway.py` |
+| Abuse | Rate limit per key / workspace / IP → 429 + `Retry-After` | `tests/test_rate_limit.py` |
+| Operasional | Readiness/liveness, endpoint `/metrics` dengan token | `tests/test_health.py` |
+
+Tes berjalan in-process (httpx ASGI) terhadap **database tes terisolasi** (`TEST_DB_NAME`, default
+`<DB_NAME>_pytest`) yang di-drop & di-seed ulang setiap run — aman untuk CI paralel dan tidak menyentuh data aplikasi.
+
+---
+
+## 6. Container Hardening
+
+| Kontrol | Backend (`docker/backend.Dockerfile`) | Frontend (`docker/frontend.Dockerfile`) |
+| :--- | :--- | :--- |
+| Multi-stage | builder (`build-essential`, venv) → runtime `python:3.11-slim` | `node:20-alpine` build → `nginx-unprivileged:1.27-alpine` |
+| User non-root | UID/GID `10001` | UID `101` |
+| Patch OS | `apt-get upgrade` di runtime stage | base alpine terkini |
+| Bebas secret & tes | `rm -rf backend/tests backend/.env` | sourcemap dimatikan |
+| Healthcheck | `GET /api/health/live` | `GET /healthz` |
+| Header keamanan | — | CSP, `X-Frame-Options DENY`, `nosniff`, COOP, Permissions-Policy, `server_tokens off` |
+
+Di Docker Compose ditambah `read_only: true`, `tmpfs`, `cap_drop: [ALL]`, `no-new-privileges`.
+
+---
+
+## 7. Deployment ke Kubernetes
+
+Direktori [`k8s/`](./k8s) di-render dengan **Kustomize** (`kubectl apply -k k8s/`).
+
+| Manifest | Isi |
+| :--- | :--- |
+| `namespace.yaml` | Namespace `tollgate` |
+| `configmap.yaml` / `secret.example.yaml` | Konfigurasi non-rahasia; template secret (dibuat *out of band*, tidak di-commit) |
+| `backend.yaml` | ServiceAccount (tanpa token), Deployment 2 replika, Service, **HPA 2–6**, PodDisruptionBudget |
+| `frontend.yaml` | Deployment 2 replika, Service, PodDisruptionBudget |
+| `mongodb.yaml` | StatefulSet + PVC, Service |
+| `ingress.yaml` | Ingress TLS: `/api` → backend, `/` → frontend |
+| `networkpolicy.yaml` | **default-deny-all**, izin DNS, ingress-nginx → frontend/backend, backend → mongodb |
+| `servicemonitor.yaml` | Target scrape Prometheus Operator |
+
+**Strategi rollout**: `RollingUpdate` dengan `maxSurge: 1`, `maxUnavailable: 0` (zero-downtime).
+**Probes**: liveness `GET /api/health/live`, readiness `GET /api/health` (cek database).
+**securityContext**: `runAsNonRoot`, `readOnlyRootFilesystem`, `allowPrivilegeEscalation: false`,
+`capabilities.drop: [ALL]`, `seccompProfile: RuntimeDefault`, resource requests/limits.
+
+**Alur deploy di Jenkins** (setelah *Verify Signatures* lolos)
+
+```bash
+BACKEND_REF=$(cat test_reports/supply-chain/tollgate-backend.digest)    # ghcr.io/...@sha256:...
+FRONTEND_REF=$(cat test_reports/supply-chain/tollgate-frontend.digest)
+kubectl kustomize k8s > /tmp/tollgate-rendered.yaml
+sed -i "s#ghcr.io/0xshalah/tollgate-backend:latest#${BACKEND_REF}#; s#ghcr.io/0xshalah/tollgate-frontend:latest#${FRONTEND_REF}#" /tmp/tollgate-rendered.yaml
+grep -q "tollgate-[a-z]*:latest" /tmp/tollgate-rendered.yaml && exit 1   # tidak boleh ada image tanpa pin
+kubectl apply -f /tmp/tollgate-rendered.yaml
+kubectl -n tollgate rollout status deploy/tollgate-backend --timeout=180s
+kubectl -n tollgate rollout status deploy/tollgate-frontend --timeout=180s
+```
+
+> Verifikasi tanda tangan saat ini ditegakkan di pipeline. Penegakan di sisi cluster (admission policy
+> seperti Kyverno `verifyImages`) direncanakan pada fase berikutnya.
+
+---
+
+## 8. Observability & Alerting
+
+- **Metrik aplikasi** (`GET /metrics`, opsional Bearer `METRICS_TOKEN`, tidak diekspos lewat nginx publik):
+  `tollgate_http_requests_total`, histogram latency per route, `tollgate_gateway_evaluations_total`,
+  `tollgate_guardrail_threats_total`, `tollgate_rate_limited_total`.
+- **Prometheus** (`monitoring/prometheus/`): scrape 15 detik + 7 alert rule —
+  `BackendDown`, `High5xxRate`, `HighLatencyP95`, `CriticalThreatSpike`, `BlockedRatioHigh`,
+  `RateLimitAbuse`, `AuthFailuresHigh`.
+- **Grafana** (`monitoring/grafana/`): datasource & dashboard ter-provision — requests/s, rasio 5xx,
+  latency p95, rate-limited, evaluasi guardrail per outcome, ancaman per tipe, status code.
+- Lokal: `docker compose ... --profile monitoring up -d`.
+
+---
+
+## 9. Artefak yang Dapat Diaudit
+
+Semua laporan ditulis ke `test_reports/` dan diarsipkan Jenkins (`archiveArtifacts`, fingerprint):
+
+| Path | Isi | Format |
+| :--- | :--- | :--- |
+| `test_reports/pytest/junit.xml` | Hasil 90 tes | JUnit (xunit2) |
+| `test_reports/security/gitleaks.sarif` | Secret scan | SARIF |
+| `test_reports/security/bandit.json` | SAST Python | JSON |
+| `test_reports/security/semgrep.sarif` | SAST OWASP | SARIF |
+| `test_reports/security/pip-audit.json` | SCA Python | JSON |
+| `test_reports/security/trivy-<image>.sarif` | Scan image | SARIF |
+| `test_reports/security/sbom-<image>.cdx.json` | Software Bill of Materials | CycloneDX |
+| `test_reports/security/zap-baseline.{html,json}` | DAST (opsional) | HTML / JSON |
+| `test_reports/supply-chain/<image>.digest` | Digest image yang di-push | teks |
+| `test_reports/supply-chain/verify-<image>.json` | Hasil `cosign verify` sebelum deploy | JSON |
+| GHCR `<image>:sha256-<digest>.sig` / `.att` | Tanda tangan cosign & attestation SBOM (lihat `cosign tree`) | OCI artifact |
+| Rekor (sigstore) | Entri transparency log untuk setiap tanda tangan | log publik |
+
+Hasil scan dan tes yang sudah dijalankan secara lokal (bukan dari Jenkins) ada di
+[`docs/evidence/local/`](./docs/evidence/local) dan dirangkum di [`docs/evidence-report.md`](./docs/evidence-report.md).
+
+---
+
+## 10. Status & Roadmap
+
+| Fase | Fokus | Status |
+| :--- | :--- | :--- |
+| **1** | Dokumentasi arsitektur & struktur repo | ✅ Selesai |
+| **2** | Workload uji (Tollgate) + Docker + suite tes | ✅ Selesai |
+| **3** | Jenkinsfile & integrasi security scanning | 🟡 **Pipeline as code selesai**, belum dieksekusi di Jenkins |
+| **4** | Kubernetes, deploy otomatis, monitoring | 🟡 **Manifest & stage deploy selesai**, belum diuji di cluster |
+
+### Fase 1 — Dokumentasi & Struktur Repo
+
+- [x] Inisialisasi repository dan remote GitHub
+- [x] `README.md` & `ARCHITECTURE.md` (topologi, diagram, roadmap)
+- [x] Struktur direktori
+- [ ] Review & persetujuan arsitektur oleh mentor
+
+### Fase 2 — Workload Uji & Containerization
+
+- [x] Aplikasi Tollgate (frontend React, backend FastAPI, MongoDB)
+- [x] `Dockerfile` multi-stage frontend & backend (non-root, healthcheck)
+- [x] `docker-compose.yml` (read-only, cap_drop, profile monitoring)
+- [x] Suite pytest 90 tes, database tes terisolasi
+
+### Fase 3 — Pipeline & Security Scanning
+
+- [x] `Jenkinsfile` declarative (checkout → secret scan → SAST/SCA paralel → test → build → scan → push → sign → verify → deploy → DAST)
+- [x] Gitleaks, Bandit, Semgrep, pip-audit, yarn audit
+- [x] Trivy image scan + SBOM + IaC scan
+- [x] Stage SonarQube (opsional)
+- [x] Push ke GHCR dengan tag `git-sha`, digest dicatat
+- [x] Tanda tangan image & attestation SBOM dengan cosign, verifikasi sebelum deploy
+- [x] Laporan bukti dengan hasil scan & tes lokal ([`docs/evidence-report.md`](./docs/evidence-report.md))
+- [ ] Tindak lanjut temuan lokal F-01..F-08 (gitleaks false positive, pip-audit, yarn audit)
+- [ ] Instalasi & konfigurasi Jenkins + plugin
+- [ ] GitHub Webhook → Jenkins (`/github-webhook/`)
+- [ ] Key pair cosign asli di `cosign.pub` + kredensial Jenkins
+- [ ] Quality Gate SonarQube sebagai gate (`waitForQualityGate`)
+- [ ] Notifikasi pipeline (Slack/Discord/Telegram) — saat ini hanya `echo` saat gagal
+- [ ] Bukti build Jenkins hijau (tahap build, scan image, sign, verify, deploy) di `docs/`
+
+### Fase 4 — Kubernetes & Deployment Otomatis
+
+- [x] Manifest Kustomize (Deployment, Service, StatefulSet, Ingress, HPA, PDB, NetworkPolicy, ServiceMonitor)
+- [x] Liveness & readiness probe, securityContext, resource limits
+- [x] Stage deploy dengan image di-pin ke digest terverifikasi + `rollout status`
+- [ ] Admission policy cluster (mis. Kyverno `verifyImages`) yang menolak image tanpa tanda tangan
+- [x] Konfigurasi Prometheus (alert rules) & Grafana (dashboard)
+- [ ] Cluster K3s / Minikube + kubeconfig untuk Jenkins
+- [ ] Rollback otomatis (`kubectl rollout undo`) saat rollout gagal + uji rolling update
+- [ ] Cloudflare Zero Trust Tunnel
+
+### Dokumentasi pendukung
+
+- [ ] ADR perubahan stack (rencana Next.js/SQLite → realisasi React/FastAPI/MongoDB)
+- [ ] Threat model (STRIDE)
+- [ ] Sinkronisasi `ARCHITECTURE.md` dengan stack terbaru
+
+---
+
+## 11. Studi Kasus: Tollgate (Workload Uji)
+
+Tollgate dipilih sebagai objek uji pipeline karena memiliki karakteristik layanan produksi:
+multi-service (frontend, backend, database), autentikasi & otorisasi, secret (JWT, HMAC API key),
+health probe, metrik, serta permukaan serangan yang relevan untuk diuji (API key, input LLM).
+
+| Komponen | Ringkasan |
+| :--- | :--- |
+| **Frontend** | React 19 + Tailwind: landing page dan developer console (API keys, playground, security logs, settings) |
+| **Backend** | FastAPI: `POST /v1/chat/completions` (model `auto` default), auth JWT, RBAC, guardrail (prompt injection, PII, toxicity), rate limit, security log, `/metrics` |
+| **Database** | MongoDB 7: users, workspaces, api_keys, security_logs, gateway_settings, rate_limits, login_attempts |
+| **Probes** | `GET /api/health` (readiness, cek DB) · `GET /api/health/live` (liveness) |
+| **LLM** | Mode mock (balasan `[PLACEHOLDER]`) tanpa biaya untuk CI; mode real via `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` |
+
+> Keterbatasan workload yang diketahui: model `auto` saat ini selalu ke route `nexus-fast-v1`, dan
+> format respons belum skema `choices[]` OpenAI. Hal ini tidak memengaruhi penilaian pipeline.
+
+---
+
+## 12. Struktur Repository
 
 ```text
 devsecops-capstone-project/
-├── README.md                  # Logbook progres, ringkasan projek, roadmap
-├── ARCHITECTURE.md            # Desain sistem & standar keamanan (dokumen ini)
-├── .gitignore
-├── .dockerignore
-├── frontend/                  # SaaS landing page & dashboard (Fase 2)
-├── backend/                   # AI API Gateway engine (Fase 2)
-├── database/                  # Skema, migrasi, seed data (Fase 2)
-├── docker/                    # Dockerfile & docker-compose untuk local dev (Fase 2)
-├── jenkins/                   # Jenkinsfile & konfigurasi pipeline (Fase 3)
-├── k8s/                       # Manifest Kubernetes: deployment, service, ingress (Fase 4)
-├── monitoring/                # Konfigurasi Prometheus, Grafana, alert rules (Fase lanjutan)
-├── scripts/                   # Skrip bantu: build, scan, deploy, smoke test
-└── docs/                      # Diagram, laporan scan, ADR, screenshot
-    └── assets/                # Gambar & artefak dokumentasi
+├── jenkins/Jenkinsfile        # ★ Pipeline DevSecOps (deliverable utama)
+├── docker/                    # ★ Dockerfile hardened, docker-compose.yml, nginx, .env.example
+├── k8s/                       # ★ Manifest Kustomize + NetworkPolicy + HPA + ServiceMonitor
+├── monitoring/                # ★ Prometheus (scrape, alert rules) & Grafana (provisioning)
+├── tests/                     # ★ Suite pytest keamanan & fungsional (dijalankan di pipeline)
+├── cosign.pub                 # ★ Public key verifikasi tanda tangan image (placeholder, ganti)
+├── backend/                   # Workload: FastAPI gateway
+├── frontend/                  # Workload: React landing page & console
+├── database/                  # Workload: inisialisasi koleksi/index & seed
+├── docs/                      # ★ evidence-report.md, supply-chain-signing.md, evidence/local/ (laporan mentah)
+├── scripts/                   # (kosong) skrip bantu
+├── ARCHITECTURE.md
+└── README.md
 ```
 
-> Direktori saat ini hanya berisi `.gitkeep` sebagai *placeholder*. Kode aplikasi dan pipeline
-> **sengaja belum dibuat** — sesuai roadmap, implementasi dimulai pada Fase 2 setelah dokumen
-> arsitektur ini disetujui dan ter-push.
+---
+
+## 13. Menjalankan & Mereproduksi Pipeline Secara Lokal
+
+### 13.1 Stack lokal (Docker Compose)
+
+```bash
+git clone https://github.com/0xshalah/devsecops-capstone-project.git
+cd devsecops-capstone-project
+
+cp docker/.env.example docker/.env      # ganti semua nilai CHANGE_ME
+docker compose -f docker/docker-compose.yml --env-file docker/.env up -d --build
+docker compose -f docker/docker-compose.yml --env-file docker/.env --profile monitoring up -d   # opsional
+
+curl -i http://localhost:8080/api/health
+curl -X POST http://localhost:8080/v1/chat/completions \
+  -H "Authorization: Bearer sk-gw-test-xxxxxxxx" -H "Content-Type: application/json" \
+  -d '{"model":"auto","messages":[{"role":"user","content":"Hello"}]}'
+```
+
+### 13.2 Menjalankan gate pipeline secara manual
+
+```bash
+# Secret scan
+gitleaks detect --source . --redact
+
+# SAST & SCA
+bandit -r backend database -ll
+semgrep scan --config p/owasp-top-ten --config p/python --config p/react --error backend database frontend/src
+pip-audit -r backend/requirements.prod.txt --strict
+(cd frontend && yarn install --frozen-lockfile --ignore-scripts && yarn audit --level high --groups dependencies)
+
+# Tes (butuh MongoDB + env seperti docker/.env.example)
+cd backend && pip install -r requirements.prod.txt pytest pytest-asyncio pytest-xdist
+pytest --junitxml=../test_reports/pytest/junit.xml && cd ..
+
+# Build & scan image
+docker build -f docker/backend.Dockerfile -t tollgate-backend:dev .
+trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 tollgate-backend:dev
+trivy config --severity HIGH,CRITICAL --exit-code 1 docker k8s
+```
+
+### 13.3 Deploy ke cluster lokal
+
+```bash
+kubectl apply -f k8s/namespace.yaml
+kubectl -n tollgate create secret generic tollgate-backend-secrets --from-literal=...   # lihat k8s/secret.example.yaml
+kubectl apply -k k8s/
+kubectl -n tollgate rollout status deploy/tollgate-backend
+```
 
 ---
 
-## 7. Roadmap Eksekusi (4 Fase)
-
-Pengerjaan dibagi menjadi **4 fase berurutan** agar sistem tetap stabil, mudah diuji, dan setiap
-tahap menghasilkan artefak yang dapat diverifikasi.
-
-### Fase 1 — Inisialisasi Dokumentasi & Struktur Repo  ·  *(Target saat ini)*
-
-- [x] Inisialisasi repository `devsecops-capstone-project` dan remote GitHub.
-- [x] Menyusun `README.md` (ringkasan, topologi, diagram Mermaid, roadmap, checklist).
-- [x] Menyusun `ARCHITECTURE.md` (desain sistem, data flow, standar keamanan).
-- [x] Membuat struktur direktori awal dengan `.gitkeep`.
-- [x] Commit & push dokumentasi ke branch `main`.
-- [ ] Review & persetujuan arsitektur oleh mentor.
-
-**Definition of Done**: dokumen arsitektur dapat dibaca mandiri oleh engineer lain dan cukup
-untuk memulai implementasi tanpa ambiguitas.
-
-### Fase 2 — Pengembangan MVP Full-Stack AI API Gateway
-
-- [ ] Setup project frontend (Next.js + TypeScript + Tailwind).
-- [ ] Implementasi landing page, dashboard, API key management, playground, usage chart.
-- [ ] Setup backend gateway dengan endpoint `/health`, `/ready`, `/v1/chat/completions`.
-- [ ] Implementasi validasi API Key, guardrails prompt injection, token estimator, mock LLM router.
-- [ ] Desain skema database + migrasi + seed data.
-- [ ] `Dockerfile` multi-stage untuk frontend & backend (non-root user, healthcheck).
-- [ ] `docker-compose.yml` untuk pengujian lokal end-to-end.
-- [ ] Unit test & smoke test lokal; dokumentasi cara menjalankan.
-
-**Definition of Done**: aplikasi berjalan lokal via Docker Compose, seluruh endpoint utama berfungsi,
-`GET /health` mengembalikan `200 OK`, dan unit test lulus.
-
-### Fase 3 — Jenkinsfile & Integrasi Security Scanning
-
-- [ ] Instalasi & konfigurasi Jenkins (plugin Git, Docker, SonarQube, Kubernetes CLI).
-- [ ] Konfigurasi GitHub Webhook → Jenkins (`/github-webhook/`).
-- [ ] Menulis `Jenkinsfile` declarative: checkout, build, test, scan, push.
-- [ ] Integrasi **SonarQube** (SAST) + Quality Gate sebagai gate pipeline.
-- [ ] Integrasi **Trivy** untuk SCA (`trivy fs`) dan image scan (`trivy image`).
-- [ ] Push image ke Container Registry dengan tag `git-sha`.
-- [ ] Notifikasi hasil pipeline (Slack/Discord/Telegram).
-- [ ] Dokumentasi bukti scan (screenshot/laporan) di `docs/`.
-
-**Definition of Done**: satu `git push` memicu pipeline lengkap; build gagal otomatis ketika
-ditemukan kerentanan `CRITICAL` atau Quality Gate SonarQube tidak lolos.
-
-### Fase 4 — Manifest Kubernetes & Deployment Otomatis
-
-- [ ] Menyusun `k8s/deployment.yaml`, `k8s/service.yaml`, `k8s/configmap.yaml`, `k8s/secret.yaml`.
-- [ ] Konfigurasi **liveness** & **readiness** probe ke endpoint `/health`.
-- [ ] Konfigurasi resource requests/limits dan security context (non-root, read-only FS).
-- [ ] Setup cluster K3s / Minikube dan kubeconfig untuk Jenkins.
-- [ ] Menambahkan stage deploy di Jenkins (`kubectl set image` / `rollout status`).
-- [ ] Uji rolling update & rollback otomatis saat deployment gagal.
-- [ ] (Lanjutan) Prometheus + Grafana monitoring, Cloudflare Zero Trust Tunnel.
-
-**Definition of Done**: deployment otomatis dari Jenkins berhasil, pod berstatus `Ready` dengan probe
-aktif, dan aplikasi dapat diakses melalui URL publik Cloudflare Tunnel.
-
----
-
-## 8. Progress Checklist
-
-### Dokumentasi & Perencanaan
-
-- [x] README.md — ringkasan projek, topologi, roadmap
-- [x] ARCHITECTURE.md — desain sistem & standar keamanan
-- [x] Diagram Mermaid pipeline CI/CD
-- [x] Diagram Mermaid alur request runtime
-- [x] Diagram ERD database
-- [x] Struktur direktori awal
-- [ ] ADR (Architecture Decision Record) untuk pemilihan stack backend
-- [ ] Dokumen threat model (STRIDE) — fase lanjutan
-
-### Aplikasi (Fase 2)
-
-- [ ] Frontend — landing page
-- [ ] Frontend — dashboard & API key management
-- [ ] Frontend — live playground
-- [ ] Frontend — usage monitoring
-- [ ] Backend — gateway & routing
-- [ ] Backend — `/health` & `/ready`
-- [ ] Backend — API key validation
-- [ ] Backend — prompt injection guardrails
-- [ ] Backend — token estimator
-- [ ] Database — schema & migrations
-- [ ] Dockerfile — frontend (non-root)
-- [ ] Dockerfile — backend (non-root)
-- [ ] Docker Compose — local stack
-
-### Pipeline & Keamanan (Fase 3)
-
-- [ ] Jenkins installed & configured
-- [ ] GitHub webhook connected
-- [ ] Jenkinsfile — build & test stage
-- [ ] SonarQube SAST integration
-- [ ] Trivy SCA (`fs`) integration
-- [ ] Trivy image scan integration
-- [ ] Quality gate enforcement
-- [ ] Registry push
-- [ ] Pipeline notification
-
-### Deployment (Fase 4)
-
-- [ ] K3s / Minikube cluster ready
-- [ ] `deployment.yaml`
-- [ ] `service.yaml`
-- [ ] Liveness & readiness probe
-- [ ] Security context (non-root, read-only FS)
-- [ ] Automated deploy from Jenkins
-- [ ] Rollback strategy tested
-- [ ] Prometheus + Grafana
-- [ ] Cloudflare Zero Trust Tunnel
-
----
-
-## 9. Tech Stack
+## 14. Tech Stack
 
 | Kategori | Teknologi |
 | :--- | :--- |
 | **Source Control** | Git, GitHub, GitHub Webhook |
 | **CI/CD** | Jenkins (Declarative Pipeline) |
-| **SAST** | SonarQube |
-| **SCA & Image Scan** | Trivy |
-| **Containerization** | Docker (multi-stage, non-root) |
-| **Registry** | GitHub Container Registry (GHCR) / Docker Hub |
-| **Orchestration** | Kubernetes (K3s / Minikube) |
-| **Frontend** | Next.js, TypeScript, Tailwind CSS |
-| **Backend** | Node.js + TypeScript (Fastify) *atau* Python (FastAPI) — final pada Fase 2 |
-| **Database** | SQLite (MVP) → PostgreSQL (scale-up) |
+| **Secret Scan** | Gitleaks |
+| **SAST** | SonarQube, Bandit, Semgrep |
+| **SCA** | pip-audit, yarn audit |
+| **Image & IaC Scan** | Trivy (vuln, secret, config) + SBOM CycloneDX |
+| **Supply Chain** | cosign v2 (sign, attest, verify) + Rekor transparency log |
+| **DAST** | OWASP ZAP baseline |
+| **Containerization** | Docker multi-stage, non-root, nginx-unprivileged |
+| **Registry** | GitHub Container Registry (GHCR) |
+| **Orchestration** | Kubernetes (K3s / Minikube) + Kustomize |
 | **Monitoring** | Prometheus, Grafana |
-| **Public Access** | Cloudflare Zero Trust Tunnel |
+| **Testing** | pytest, pytest-asyncio, pytest-xdist, httpx |
+| **Workload uji** | React 19, FastAPI (Python 3.11), MongoDB 7 |
+| **Public Access** | Cloudflare Zero Trust Tunnel *(rencana)* |
 
 ---
 
-## 10. Cara Menjalankan (Preview Fase 2+)
-
-> Perintah di bawah adalah **target** dan baru akan berfungsi setelah Fase 2 selesai.
-
-```bash
-# Clone repository
-git clone https://github.com/0xshalah/devsecops-capstone-project.git
-cd devsecops-capstone-project
-
-# Jalankan stack lokal (setelah Fase 2)
-docker compose -f docker/docker-compose.yml up --build
-
-# Verifikasi health endpoint
-curl -i http://localhost:8080/health
-
-# Uji gateway dengan API key (setelah membuat key di dashboard)
-curl -X POST http://localhost:8080/v1/chat/completions \
-  -H "Authorization: Bearer sk-live-xxxxxxxx" \
-  -H "Content-Type: application/json" \
-  -d '{"model":"mock-gpt","messages":[{"role":"user","content":"Hello"}]}'
-```
-
----
-
-## 11. Dokumentasi Terkait
-
-| Dokumen | Isi |
-| :--- | :--- |
-| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Desain sistem mendetail, komponen, data flow, standar keamanan, dan keputusan arsitektur. |
-| `docs/` | Diagram, laporan scan, ADR, dan bukti screenshot (diisi bertahap per fase). |
-
----
-
-## 12. Kontak
+## 15. Kontak
 
 **Shalahuddin Al-Ayyubi**
 GitHub: [@0xshalah](https://github.com/0xshalah)
 
+Dokumen terkait: [`ARCHITECTURE.md`](./ARCHITECTURE.md) — desain sistem & standar keamanan.
+
 ---
 
 <p align="center">
-  <sub>Dokumen ini adalah bagian dari logbook magang. Diperbarui pada Fase 1 — Inisialisasi Arsitektur.</sub>
+  <sub>Logbook Internship Capstone — Automated DevSecOps CI/CD Pipeline. Diperbarui setelah Fase 4 (pipeline as code), menunggu eksekusi Jenkins & uji cluster.</sub>
 </p>
